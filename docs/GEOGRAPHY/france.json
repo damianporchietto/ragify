@@ -1,0 +1,19 @@
+{
+  "title": "France Information",
+  "description": "France is a country located in Western Europe. Its capital is Paris, which is known for landmarks such as the Eiffel Tower and the Louvre Museum.",
+  "url": "https://example.com/france",
+  "requirements": [
+    {
+      "title": "Geography",
+      "content": "France shares borders with Belgium, Luxembourg, Germany, Switzerland, Italy, Spain, and Andorra. It also has coastlines on the Atlantic Ocean, Mediterranean Sea, and English Channel."
+    },
+    {
+      "title": "Demographics",
+      "content": "France has a population of approximately 67 million people. French is the official language, though many regional languages are also spoken."
+    },
+    {
+      "title": "Economy",
+      "content": "France has the seventh-largest economy in the world. Key industries include tourism, manufacturing, and agriculture, with France being one of the world's largest exporters of wine and cheese."
+    }
+  ]
+} 
