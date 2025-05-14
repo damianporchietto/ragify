@@ -1,0 +1,14 @@
+flask>=2.0.0
+python-dotenv>=0.20.0
+langchain>=0.3.0
+langchain-openai>=0.1.0
+langchain-community>=0.0.36
+langchain-text-splitters>=0.0.1
+faiss-cpu>=1.7.0
+
+# Optional model providers (uncomment as needed)
+# langchain-huggingface>=0.0.1
+# transformers>=4.30.0
+# torch>=2.0.0
+# sentence-transformers>=2.2.0
+# accelerate>=0.19.0
