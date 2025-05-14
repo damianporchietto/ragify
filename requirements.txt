@@ -5,6 +5,7 @@ langchain-openai>=0.1.0
 langchain-community>=0.0.36
 langchain-text-splitters>=0.0.1
 faiss-cpu>=1.7.0
+PyPDF2>=3.0.0
 
 # Optional model providers (uncomment as needed)
 # langchain-huggingface>=0.0.1

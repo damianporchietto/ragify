@@ -8,6 +8,14 @@ from langchain.schema import Document
 
 from model_providers import get_embeddings_model
 
+# Try to import PyPDF2 for PDF support
+try:
+    import PyPDF2
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+    print("PyPDF2 not found. PDF support disabled. Install with: pip install PyPDF2")
+
 # Part of the ragify framework - a RAG system for knowledge-based Q&A
 DOCS_DIR = Path(__file__).resolve().parent / 'docs'
 
@@ -90,8 +98,59 @@ def process_text_file(text_path: Path) -> List[Document]:
     
     return documents
 
+def process_pdf_file(pdf_path: Path) -> List[Document]:
+    """Process a PDF file and convert it to Document objects.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        
+    Returns:
+        List of Document objects created from the PDF file
+    """
+    documents = []
+    
+    if not PDF_SUPPORT:
+        print(f"Skipping PDF file {pdf_path}: PyPDF2 not installed")
+        return documents
+    
+    try:
+        # Extract a title from the filename
+        filename = pdf_path.name
+        title = filename.replace('.pdf', '').replace('_', ' ').replace('-', ' ').title()
+        
+        with open(pdf_path, 'rb') as file:
+            # Create a PDF reader object
+            pdf_reader = PyPDF2.PdfReader(file)
+            
+            # Get the number of pages in the PDF
+            num_pages = len(pdf_reader.pages)
+            
+            # Extract text from each page
+            full_text = ""
+            for page_num in range(num_pages):
+                page = pdf_reader.pages[page_num]
+                full_text += page.extract_text() + "\n\n"
+            
+            # Create document with content and metadata
+            documents.append(
+                Document(
+                    page_content=full_text,
+                    metadata={
+                        "source": str(pdf_path),
+                        "title": title,
+                        "file_type": "pdf",
+                        "pages": num_pages
+                    }
+                )
+            )
+        
+    except Exception as e:
+        print(f"Error processing PDF file {pdf_path}: {e}")
+    
+    return documents
+
 def ingest_and_build(output_path: str, embedding_provider: str = "openai", embedding_model: Optional[str] = None):
-    """Load JSON and text files under docs/ and build a persistent FAISS vector store.
+    """Load JSON, text, and PDF files under docs/ and build a persistent FAISS vector store.
 
     Args:
         output_path: Where to store the FAISS index directory
@@ -118,11 +177,19 @@ def ingest_and_build(output_path: str, embedding_provider: str = "openai", embed
             documents.extend(docs)
             text_count += 1
     
+    # Recursively process all PDF files in subdirectories
+    pdf_count = 0
+    if PDF_SUPPORT:
+        for pdf_path in DOCS_DIR.glob('**/*.pdf'):
+            docs = process_pdf_file(pdf_path)
+            documents.extend(docs)
+            pdf_count += 1
+    
     # Split the documents
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = splitter.split_documents(documents)
     
-    print(f"Processed {json_count} JSON files and {text_count} text files into {len(splits)} chunks")
+    print(f"Processed {json_count} JSON files, {text_count} text files, and {pdf_count} PDF files into {len(splits)} chunks")
 
     # Create vector store with the specified embedding model
     embeddings = get_embeddings_model(provider=embedding_provider, model_name=embedding_model)

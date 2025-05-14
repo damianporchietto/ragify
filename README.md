@@ -159,6 +159,7 @@ python test_models.py --model-name "test_name"
   * JSON files following the existing structure
   * Plain text (.txt) files
   * Markdown (.md) files 
+  * PDF files (requires PyPDF2: `pip install PyPDF2`)
 * Run `python ingest.py` after adding new documents to rebuild the index.
 * You can modify the prompt in `rag_chain.py` to adjust how queries are processed.
 * To add conversational history, you can extend the system using `ConversationalRetrievalChain` from LangChain.
