@@ -8,7 +8,7 @@ A comprehensive **Retrieval-Augmented Generation (RAG)** framework for building 
 
 - **🌐 Web Chat Interface**: Beautiful, responsive chat client with real-time interactions
 - **🔧 Flexible Configuration**: YAML-based configuration with environment variable overrides
-- **🤖 Multi-Provider Support**: OpenAI, Ollama, and HuggingFace model providers
+- **🤖 Multi-Provider Support**: OpenAI, Google Gemini, Ollama, and HuggingFace model providers
 - **📄 Document Processing**: Support for JSON, TXT, MD, and PDF files
 - **🔍 Vector Search**: FAISS-powered semantic search
 - **⚡ RESTful API**: Complete API with health checks, configuration endpoints
@@ -41,6 +41,7 @@ ragify/
 ├── storage/               # FAISS vector database (auto-generated)
 ├── test_models.py         # Model testing utilities
 ├── test_multiple_models.sh # Batch testing script
+├── test_gemini.py         # Gemini integration test script
 └── dotenv                 # Environment variables template
 ```
 
@@ -136,9 +137,10 @@ Key environment variables for configuration:
 ```bash
 # API Keys
 OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=your-google-api-key
 
 # Provider Selection
-LLM_PROVIDER=openai              # openai, ollama, huggingface
+LLM_PROVIDER=openai              # openai, gemini, ollama, huggingface
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=openai
 EMBEDDING_MODEL=text-embedding-3-large
@@ -157,6 +159,18 @@ export OPENAI_API_KEY=sk-...
 
 # Run with OpenAI (default)
 python app.py --llm-provider openai --llm-model gpt-4o-mini
+```
+
+### Google Gemini
+```bash
+# Set your API key (get it from https://aistudio.google.com/app/apikey)
+export GOOGLE_API_KEY=your-google-api-key
+
+# Install Gemini dependencies
+pip install langchain-google-genai
+
+# Run with Gemini
+python app.py --llm-provider gemini --llm-model gemini-1.5-flash
 ```
 
 ### Ollama (Local Models)
@@ -251,6 +265,13 @@ python ingest.py --provider ollama --model nomic-embed-text
 
 ```bash
 python test_models.py --model-name "test_configuration"
+```
+
+### Testing Gemini Integration
+
+```bash
+# Test Gemini setup specifically
+python test_gemini.py
 ```
 
 ### Batch Testing Multiple Configurations

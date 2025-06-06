@@ -58,24 +58,29 @@ pip install -r "${REQUIREMENTS_FILE}"
 # Ask if user wants to install optional dependencies
 echo -e "\n${YELLOW}Do you want to install optional dependencies for additional model providers?${NC}"
 echo "1) OpenAI only (already installed with base requirements)"
-echo "2) Add Ollama support (local models)"
-echo "3) Add HuggingFace support (requires more disk space)"
-echo "4) Install all dependencies (recommended for full testing)"
-echo "Enter your choice (1-4):"
+echo "2) Add Google Gemini support"
+echo "3) Add Ollama support (local models)"
+echo "4) Add HuggingFace support (requires more disk space)"
+echo "5) Install all dependencies (recommended for full testing)"
+echo "Enter your choice (1-5):"
 read -r choice
 
 case $choice in
     2)
+        echo -e "\n${GREEN}Installing Google Gemini dependencies...${NC}"
+        pip install langchain-google-genai
+        ;;
+    3)
         echo -e "\n${GREEN}Installing Ollama dependencies...${NC}"
         pip install langchain_community
         ;;
-    3)
+    4)
         echo -e "\n${GREEN}Installing HuggingFace dependencies...${NC}"
         pip install langchain-huggingface transformers torch sentence-transformers accelerate
         ;;
-    4)
+    5)
         echo -e "\n${GREEN}Installing all optional dependencies...${NC}"
-        pip install langchain_community langchain-huggingface transformers torch sentence-transformers accelerate
+        pip install langchain_community langchain-google-genai langchain-huggingface transformers torch sentence-transformers accelerate
         ;;
     *)
         echo -e "\n${GREEN}Skipping optional dependencies.${NC}"
@@ -101,8 +106,9 @@ ENV_FILE="${PROJECT_DIR}/.env"
 if [ ! -f "${ENV_FILE}" ]; then
     echo -e "\n${GREEN}Creating .env file with default settings...${NC}"
     cat > "${ENV_FILE}" << EOF
-# OpenAI API Key - required for OpenAI models
+# API Keys - required for respective model providers
 # OPENAI_API_KEY=sk-your-api-key-here
+# GOOGLE_API_KEY=your-google-api-key-here
 
 # Port for the Flask application
 PORT=${DEFAULT_PORT}
@@ -137,9 +143,18 @@ echo ""
 echo "To run tests with different model configurations:"
 echo "    ./test_multiple_models.sh"
 echo ""
-if [[ $choice == 1 ]]; then
-    echo -e "${YELLOW}Remember to add your OpenAI API key to the .env file!${NC}"
-fi
+case $choice in
+    1)
+        echo -e "${YELLOW}Remember to add your OpenAI API key to the .env file!${NC}"
+        ;;
+    2)
+        echo -e "${YELLOW}Remember to add your Google API key to the .env file!${NC}"
+        echo "Get your API key from: https://aistudio.google.com/app/apikey"
+        ;;
+    *)
+        echo -e "${YELLOW}Remember to add your API keys to the .env file!${NC}"
+        ;;
+esac
 
 # Keep the virtual environment activated
 echo -e "${GREEN}Virtual environment is now active and ready to use.${NC}" 

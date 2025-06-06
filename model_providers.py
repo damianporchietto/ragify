@@ -18,6 +18,7 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 # from langchain_community.chat_models import ChatOllama
 # from langchain_huggingface import HuggingFaceEmbeddings
 # from langchain_community.llms import HuggingFacePipeline
+# from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
 load_dotenv()  # Load environment variables
 
@@ -29,6 +30,10 @@ LLM_PROVIDERS = {
     "openai": {
         "name": "OpenAI",
         "description": "OpenAI GPT models (requires API key)"
+    },
+    "gemini": {
+        "name": "Google Gemini",
+        "description": "Google Gemini models (requires API key)"
     },
     "ollama": {
         "name": "Ollama",
@@ -45,6 +50,10 @@ EMBEDDING_PROVIDERS = {
     "openai": {
         "name": "OpenAI",
         "description": "OpenAI embedding models (requires API key)"
+    },
+    "gemini": {
+        "name": "Google Gemini",
+        "description": "Google Gemini embedding models (requires API key)"
     },
     "ollama": {
         "name": "Ollama",
@@ -72,6 +81,14 @@ def get_embeddings_model(provider: str = "openai", model_name: Optional[str] = N
     if provider == "openai":
         model = model_name or config.get_provider_default_model("openai", "embedding") or "text-embedding-3-large"
         return OpenAIEmbeddings(model=model)
+        
+    elif provider == "gemini":
+        try:
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            model = model_name or config.get_provider_default_model("gemini", "embedding") or "models/embedding-001"
+            return GoogleGenerativeAIEmbeddings(model=model)
+        except ImportError:
+            raise ImportError("GoogleGenerativeAIEmbeddings not available. Install with: pip install langchain-google-genai")
         
     elif provider == "ollama":
         try:
@@ -109,6 +126,14 @@ def get_llm_model(provider: str = "openai", model_name: Optional[str] = None, te
     if provider == "openai":
         model = model_name or config.get_provider_default_model("openai", "llm") or "gpt-4o-mini"
         return ChatOpenAI(model=model, temperature=temperature)
+        
+    elif provider == "gemini":
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            model = model_name or config.get_provider_default_model("gemini", "llm") or "gemini-1.5-flash"
+            return ChatGoogleGenerativeAI(model=model, temperature=temperature)
+        except ImportError:
+            raise ImportError("ChatGoogleGenerativeAI not available. Install with: pip install langchain-google-genai")
         
     elif provider == "ollama":
         try:

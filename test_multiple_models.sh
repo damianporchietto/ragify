@@ -85,6 +85,15 @@ check_dependencies() {
         echo "WARNING: OPENAI_API_KEY is not set in the environment"
       fi
       ;;
+    "gemini")
+      if [ -z "$GOOGLE_API_KEY" ]; then
+        echo "WARNING: GOOGLE_API_KEY is not set in the environment"
+      fi
+      if ! pip list | grep -q "langchain-google-genai"; then
+        echo "WARNING: The 'langchain-google-genai' package is not installed"
+        echo "To install: pip install langchain-google-genai"
+      fi
+      ;;
     "ollama")
       if ! command -v ollama &> /dev/null; then
         echo "WARNING: Ollama does not appear to be installed"
@@ -114,6 +123,14 @@ if [ -n "$OPENAI_API_KEY" ]; then
   run_test "openai_gpt4o_mini" "openai" "gpt-4o-mini" "openai" "text-embedding-3-large"
 else
   echo "Skipping OpenAI tests (OPENAI_API_KEY not found)"
+fi
+
+# Gemini tests (if there's an API key)
+if [ -n "$GOOGLE_API_KEY" ]; then
+  check_dependencies "gemini"
+  run_test "gemini_flash" "gemini" "gemini-1.5-flash" "gemini" "models/embedding-001"
+else
+  echo "Skipping Gemini tests (GOOGLE_API_KEY not found)"
 fi
 
 # Ollama tests (if installed)

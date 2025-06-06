@@ -10,6 +10,7 @@ reportlab>=3.6.0
 PyYAML>=6.0
 
 # Optional model providers (uncomment as needed)
+# langchain-google-genai>=1.0.0    # For Google Gemini support
 # langchain-huggingface>=0.0.1
 # transformers>=4.30.0
 # torch>=2.0.0
