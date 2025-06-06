@@ -352,8 +352,8 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 
 ## 📬 Support
 
-- Create an [issue](https://github.com/your-repo/ragify/issues) for bug reports
-- Start a [discussion](https://github.com/your-repo/ragify/discussions) for questions
+- Create an [issue](https://github.com/damianporchietto/ragify/issues) for bug reports
+- Start a [discussion](https://github.com/damianporchietto/ragify/discussions) for questions
 - Check the [documentation](http://localhost:5000/) when running the server
 
 ---
