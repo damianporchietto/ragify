@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{title}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #2c3e50; }
+        code { background: #f8f8f8; padding: 2px 5px; border-radius: 3px; }
+        pre { background: #f8f8f8; padding: 10px; border-radius: 5px; overflow: auto; }
+        .endpoint { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .tester { background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .tester textarea { width: 100%; height: 80px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 3px; }
+        .tester button { background-color: #2c3e50; color: white; border: none; padding: 10px 15px; border-radius: 3px; cursor: pointer; }
+        .tester button:hover { background-color: #1a2530; }
+        #result { margin-top: 20px; white-space: pre-wrap; }
+        .loading { display: none; margin-left: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>{{title}}</h1>
+    <p>{{description}}</p>
+    
+    <!-- Interactive test form -->
+    <div class="tester">
+        <h2>Test API</h2>
+        <p>Enter a query and click "Send" to test the assistant:</p>
+        <textarea id="query" placeholder="Example: What is the capital of France?"></textarea>
+        <div>
+            <button onclick="testApi()">Send Query</button>
+            <span id="loading" class="loading">Processing query...</span>
+        </div>
+        <div id="result"></div>
+    </div>
+    
+    <div class="endpoint">
+        <h2>Ask a question</h2>
+        <p><strong>Endpoint:</strong> <code>POST /ask</code></p>
+        <p><strong>Description:</strong> Query information from the knowledge base.</p>
+        <p><strong>Request Example:</strong></p>
+        <pre>
+{
+    "message": "What is the capital of France?"
+}
+        </pre>
+        <p><strong>Response Example:</strong></p>
+        <pre>
+{
+    "answer": "The capital of France is Paris. It is one of the world's major cities...",
+    "sources": [
+        {
+            "source": "/path/to/document.json",
+            "snippet": "Excerpt from the source document..."
+        }
+    ]
+}
+        </pre>
+    </div>
+    
+    <div class="endpoint">
+        <h2>Check service status</h2>
+        <p><strong>Endpoint:</strong> <code>GET /health</code></p>
+        <p><strong>Description:</strong> Verify if the service is working correctly.</p>
+    </div>
+    
+    <div class="endpoint">
+        <h2>Current configuration</h2>
+        <p><strong>Endpoint:</strong> <code>GET /config</code></p>
+        <p><strong>Description:</strong> Shows the current model configuration.</p>
+    </div>
+    
+    <div class="endpoint">
+        <h2>Available providers</h2>
+        <p><strong>Endpoint:</strong> <code>GET /providers</code></p>
+        <p><strong>Description:</strong> Lists all available model providers.</p>
+    </div>
+    
+    <h2>Current Configuration:</h2>
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Provider</th>
+            <th>Model</th>
+        </tr>
+        <tr>
+            <td>LLM</td>
+            <td>{{llm_provider}}</td>
+            <td>{{llm_model}}</td>
+        </tr>
+        <tr>
+            <td>Embeddings</td>
+            <td>{{embedding_provider}}</td>
+            <td>{{embedding_model}}</td>
+        </tr>
+    </table>
+    
+    <script>
+        function testApi() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) return;
+            
+            const resultDiv = document.getElementById('result');
+            const loadingSpan = document.getElementById('loading');
+            
+            resultDiv.innerHTML = '';
+            loadingSpan.style.display = 'inline';
+            
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingSpan.style.display = 'none';
+                
+                // Format the result
+                let result = '<h3>Response:</h3><div style="background: #f0f7ff; padding: 15px; border-radius: 5px; margin-bottom: 15px;">';
+                result += data.answer.replace(/\n/g, '<br>');
+                result += '</div>';
+                
+                if (data.sources && data.sources.length > 0) {
+                    result += '<h3>Sources:</h3><ul>';
+                    data.sources.forEach(source => {
+                        result += '<li>';
+                        if (source.title) {
+                            result += '<strong>' + source.title + '</strong><br>';
+                        }
+                        if (source.url) {
+                            result += '<a href="' + source.url + '" target="_blank">' + source.url + '</a><br>';
+                        }
+                        if (source.snippet) {
+                            result += '<small>' + source.snippet + '...</small>';
+                        }
+                        result += '</li>';
+                    });
+                    result += '</ul>';
+                }
+                
+                resultDiv.innerHTML = result;
+            })
+            .catch(error => {
+                loadingSpan.style.display = 'none';
+                resultDiv.innerHTML = '<div style="color: red; background: #fff0f0; padding: 15px; border-radius: 5px;">Error: ' + error.message + '</div>';
+            });
+        }
+        
+        // Allow pressing Enter to submit
+        document.getElementById('query').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                testApi();
+            }
+        });
+    </script>
+</body>
+</html> 

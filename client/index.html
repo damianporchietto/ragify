@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ragify Chat Client</title>
+    <link rel="stylesheet" href="/client/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <div class="header-content">
+                <h1>🤖 Ragify Assistant</h1>
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="chat-main">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message welcome-message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            Welcome! I'm your Ragify assistant. I can help you find information from the knowledge base. Ask me anything!
+                        </div>
+                        <div class="message-time" id="welcomeTime"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message bot-message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <form class="message-form" id="messageForm">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask me anything..." 
+                        rows="1"
+                        maxlength="1000"
+                    ></textarea>
+                    <button type="submit" id="sendButton" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m22 2-7 20-4-9-9-4Z"/>
+                            <path d="M22 2 11 13"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="message-counter">
+                    <span id="charCounter">0/1000</span>
+                </div>
+            </form>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="close-btn" id="closeSettings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="apiUrl">API URL:</label>
+                    <input type="url" id="apiUrl" placeholder="http://localhost:5000">
+                </div>
+                <div class="setting-group">
+                    <label for="maxMessages">Chat History Limit:</label>
+                    <input type="number" id="maxMessages" min="10" max="100" value="50">
+                </div>
+                <div class="setting-group">
+                    <button id="clearHistory" class="danger-btn">Clear Chat History</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettings" class="primary-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Button -->
+    <button class="settings-btn" id="settingsBtn" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 10v6m11-7h-6M7 12H1m15.5-7.5L12 9m-4.5 4.5L3 18m15.5 1.5L12 15M7.5 7.5 3 6"/>
+        </svg>
+    </button>
+
+    <script src="/client/script.js"></script>
+</body>
+</html> 

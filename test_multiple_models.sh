@@ -3,7 +3,21 @@
 
 set -e  # Exit on error
 
-PORT=5000
+# Read port from config file if available, otherwise use default
+if command -v python3 &> /dev/null && [ -f "config.yaml" ]; then
+    PORT=$(python3 -c "
+import yaml
+try:
+    with open('config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    print(config.get('server', {}).get('port', 5000))
+except:
+    print(5000)
+" 2>/dev/null || echo 5000)
+else
+    PORT=5000
+fi
+
 API_URL="http://localhost:$PORT"
 QUESTIONS_FILE="test_questions.txt"
 

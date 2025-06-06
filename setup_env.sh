@@ -82,6 +82,20 @@ case $choice in
         ;;
 esac
 
+# Read default port from config file if available
+DEFAULT_PORT=5000
+if [ -f "${PROJECT_DIR}/config.yaml" ]; then
+    DEFAULT_PORT=$(python3 -c "
+import yaml
+try:
+    with open('${PROJECT_DIR}/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    print(config.get('server', {}).get('port', 5000))
+except:
+    print(5000)
+" 2>/dev/null || echo 5000)
+fi
+
 # Generate a starter .env file if it doesn't exist
 ENV_FILE="${PROJECT_DIR}/.env"
 if [ ! -f "${ENV_FILE}" ]; then
@@ -91,7 +105,7 @@ if [ ! -f "${ENV_FILE}" ]; then
 # OPENAI_API_KEY=sk-your-api-key-here
 
 # Port for the Flask application
-PORT=5000
+PORT=${DEFAULT_PORT}
 
 # Default model providers
 LLM_PROVIDER=openai

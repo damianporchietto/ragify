@@ -7,6 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 
 from model_providers import get_embeddings_model
+from config_manager import config
 
 # Try to import PyPDF2 for PDF support
 try:
@@ -17,7 +18,7 @@ except ImportError:
     print("PyPDF2 not found. PDF support disabled. Install with: pip install PyPDF2")
 
 # Part of the ragify framework - a RAG system for knowledge-based Q&A
-DOCS_DIR = Path(__file__).resolve().parent / 'docs'
+DOCS_DIR = Path(__file__).resolve().parent / config.get_docs_dir()
 
 def process_json_file(json_path: Path) -> List[Document]:
     """Process a JSON file and convert it to Document objects.
@@ -149,7 +150,7 @@ def process_pdf_file(pdf_path: Path) -> List[Document]:
     
     return documents
 
-def ingest_and_build(output_path: str, embedding_provider: str = "openai", embedding_model: Optional[str] = None):
+def ingest_and_build(output_path: str, embedding_provider: str = None, embedding_model: Optional[str] = None):
     """Load JSON, text, and PDF files under docs/ and build a persistent FAISS vector store.
 
     Args:
@@ -160,6 +161,9 @@ def ingest_and_build(output_path: str, embedding_provider: str = "openai", embed
     Returns:
         Initialized FAISS vector store
     """
+    # Use config defaults if not specified
+    embedding_provider = embedding_provider or config.get_default_embedding_provider()
+    
     documents = []
     
     # Recursively process all JSON files in subdirectories
@@ -185,8 +189,11 @@ def ingest_and_build(output_path: str, embedding_provider: str = "openai", embed
             documents.extend(docs)
             pdf_count += 1
     
-    # Split the documents
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    # Split the documents using configurable parameters
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=config.get_chunk_size(), 
+        chunk_overlap=config.get_chunk_overlap()
+    )
     splits = splitter.split_documents(documents)
     
     print(f"Processed {json_count} JSON files, {text_count} text files, and {pdf_count} PDF files into {len(splits)} chunks")
@@ -198,20 +205,21 @@ def ingest_and_build(output_path: str, embedding_provider: str = "openai", embed
     vector_store = FAISS.from_documents(splits, embeddings)
     vector_store.save_local(output_path)
     print(f"Vector store saved to {output_path}")
+
     return vector_store
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Ingest documents and build vector store')
-    parser.add_argument('--output', type=str, default='storage', 
-                      help='Output directory for the FAISS index')
-    parser.add_argument('--provider', type=str, default='openai',
-                      help='Embedding provider (openai, ollama, huggingface)')
-    parser.add_argument('--model', type=str, default=None,
-                      help='Specific embedding model to use')
+    parser.add_argument('--provider', type=str, default=config.get_default_embedding_provider(),
+                        help='Embedding provider (openai, ollama, huggingface)')
+    parser.add_argument('--model', type=str, default=config.get_default_embedding_model(),
+                        help='Specific embedding model to use')
+    parser.add_argument('--output', type=str, default=config.get_storage_dir(),
+                        help='Output directory for the vector store')
     
     args = parser.parse_args()
     
-    output_path = str(Path(__file__).resolve().parent / args.output)
-    ingest_and_build(output_path, args.provider, args.model)
+    output_path = Path(__file__).resolve().parent / args.output
+    ingest_and_build(str(output_path), args.provider, args.model)

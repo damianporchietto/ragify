@@ -1,0 +1,122 @@
+# Ragify Configuration File
+# This file contains all configurable parameters for the RAG system
+
+# Server Configuration
+server:
+  port: 5000
+  debug: true
+  host: "0.0.0.0"
+
+# Model Configuration
+models:
+  # Default providers and models
+  defaults:
+    llm_provider: "openai"
+    llm_model: null  # Uses provider default if null
+    embedding_provider: "openai" 
+    embedding_model: null  # Uses provider default if null
+    temperature: 0
+  
+  # Provider-specific default models
+  provider_defaults:
+    openai:
+      llm_model: "gpt-4o-mini"
+      embedding_model: "text-embedding-3-large"
+    ollama:
+      llm_model: "mistral"
+      embedding_model: "nomic-embed-text"
+    huggingface:
+      llm_model: "google/flan-t5-xxl"
+      embedding_model: "BAAI/bge-large-en-v1.5"
+      pipeline_max_length: 512
+
+# Document Processing Configuration
+document_processing:
+  chunk_size: 1000
+  chunk_overlap: 200
+  supported_extensions:
+    - "json"
+    - "txt" 
+    - "md"
+    - "pdf"
+
+# Retrieval Configuration
+retrieval:
+  search_type: "similarity"
+  top_k_results: 4
+
+# Testing Configuration
+testing:
+  default_timeout: 60
+  health_check_timeout: 5
+  default_api_url: "http://localhost:5000"
+  default_questions:
+    - "What is the capital of France?"
+    - "How do I make sourdough bread?"
+    - "What equipment do I need for a podcast?"
+    - "What are the best practices for data security?"
+    - "What are the steps to create a website?"
+
+# System Prompt Template
+prompts:
+  rag_template: |
+    You are a sharp, high-energy assistant trained to extract precise answers from a specialized knowledge base.
+    Your mission: deliver fast, accurate, and no-nonsense answers using only the information provided.
+
+    Context:
+    {context}
+
+    User Question:
+    {query}
+
+    Your Directives:
+
+    Stick to the script. Only answer using the context above. If it’s not in there, don’t guess—say so clearly.
+
+    Don't waffle. Be concise, focused, and helpful. Cut fluff.
+
+    When useful, structure your answer—bullets, numbered steps, or short lists are great.
+
+    If the user’s question can’t be answered directly, suggest how they could rephrase it or where to look next.
+
+    Tone & Attitude:
+
+    You’re smart, quick, and clear—no rambling.
+
+    Friendly, but not fake.
+
+    Confident, not arrogant.
+
+    Always grounded in facts.
+
+    Your Response:
+    Answer:
+
+# API Documentation Template
+api_docs:
+  title: "Ragify - RAG Framework API"
+  description: "API for knowledge-based question answering using Retrieval Augmented Generation."
+  # The full HTML template will be loaded from a separate file for better maintainability
+  
+# Directory Paths
+paths:
+  docs_dir: "docs"
+  storage_dir: "storage"
+  results_dir_prefix: "results"
+
+# Environment Variables Mapping
+# These define which environment variables override which config values
+env_overrides:
+  OPENAI_API_KEY: null  # Always from env
+  PORT: "server.port"
+  FLASK_DEBUG: "server.debug"
+  LLM_PROVIDER: "models.defaults.llm_provider"
+  LLM_MODEL: "models.defaults.llm_model"
+  EMBEDDING_PROVIDER: "models.defaults.embedding_provider"
+  EMBEDDING_MODEL: "models.defaults.embedding_model"
+  OPENAI_LLM_MODEL: "models.provider_defaults.openai.llm_model"
+  OPENAI_EMBEDDING_MODEL: "models.provider_defaults.openai.embedding_model"
+  OLLAMA_LLM_MODEL: "models.provider_defaults.ollama.llm_model"
+  OLLAMA_EMBEDDING_MODEL: "models.provider_defaults.ollama.embedding_model"
+  HF_LLM_MODEL: "models.provider_defaults.huggingface.llm_model"
+  HF_EMBEDDING_MODEL: "models.provider_defaults.huggingface.embedding_model" 

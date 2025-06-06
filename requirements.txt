@@ -7,6 +7,7 @@ langchain-text-splitters>=0.0.1
 faiss-cpu>=1.7.0
 PyPDF2>=3.0.0
 reportlab>=3.6.0
+PyYAML>=6.0
 
 # Optional model providers (uncomment as needed)
 # langchain-huggingface>=0.0.1

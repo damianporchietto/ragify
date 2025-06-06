@@ -21,6 +21,9 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 load_dotenv()  # Load environment variables
 
+# Import config manager
+from config_manager import config
+
 # Dictionary of available LLM providers
 LLM_PROVIDERS = {
     "openai": {
@@ -67,13 +70,13 @@ def get_embeddings_model(provider: str = "openai", model_name: Optional[str] = N
     provider = provider.lower()
     
     if provider == "openai":
-        model = model_name or os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large")
+        model = model_name or config.get_provider_default_model("openai", "embedding") or "text-embedding-3-large"
         return OpenAIEmbeddings(model=model)
         
     elif provider == "ollama":
         try:
             from langchain_community.embeddings import OllamaEmbeddings
-            model = model_name or os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+            model = model_name or config.get_provider_default_model("ollama", "embedding") or "nomic-embed-text"
             return OllamaEmbeddings(model=model)
         except ImportError:
             raise ImportError("OllamaEmbeddings not available. Install with: pip install langchain_community")
@@ -81,7 +84,7 @@ def get_embeddings_model(provider: str = "openai", model_name: Optional[str] = N
     elif provider == "huggingface":
         try:
             from langchain_huggingface import HuggingFaceEmbeddings
-            model = model_name or os.getenv("HF_EMBEDDING_MODEL", "BAAI/bge-large-en-v1.5")
+            model = model_name or config.get_provider_default_model("huggingface", "embedding") or "BAAI/bge-large-en-v1.5"
             return HuggingFaceEmbeddings(model_name=model)
         except ImportError:
             raise ImportError("HuggingFaceEmbeddings not available. Install with: pip install langchain-huggingface")
@@ -104,13 +107,13 @@ def get_llm_model(provider: str = "openai", model_name: Optional[str] = None, te
     provider = provider.lower()
     
     if provider == "openai":
-        model = model_name or os.getenv("OPENAI_LLM_MODEL", "gpt-4o-mini")
+        model = model_name or config.get_provider_default_model("openai", "llm") or "gpt-4o-mini"
         return ChatOpenAI(model=model, temperature=temperature)
         
     elif provider == "ollama":
         try:
             from langchain_community.chat_models import ChatOllama
-            model = model_name or os.getenv("OLLAMA_LLM_MODEL", "mistral")
+            model = model_name or config.get_provider_default_model("ollama", "llm") or "mistral"
             return ChatOllama(model=model, temperature=temperature)
         except ImportError:
             raise ImportError("ChatOllama not available. Install with: pip install langchain_community")
@@ -120,7 +123,7 @@ def get_llm_model(provider: str = "openai", model_name: Optional[str] = None, te
             from langchain_community.llms import HuggingFacePipeline
             # This is more complex and usually requires more configuration
             # Simplified implementation for demonstration
-            model = model_name or os.getenv("HF_LLM_MODEL", "google/flan-t5-xxl")
+            model = model_name or config.get_provider_default_model("huggingface", "llm") or "google/flan-t5-xxl"
             from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
             
             tokenizer = AutoTokenizer.from_pretrained(model)
@@ -130,7 +133,7 @@ def get_llm_model(provider: str = "openai", model_name: Optional[str] = None, te
                 "text-generation",
                 model=hf_model, 
                 tokenizer=tokenizer,
-                max_length=512,
+                max_length=config.get_huggingface_pipeline_max_length(),
                 temperature=temperature
             )
             
