@@ -1,181 +1,361 @@
-# Ragify - A RAG Framework
+# RAGify - A Modern RAG Framework
 
-Retrieval-Augmented Generation (RAG) service for creating knowledge-based Q&A systems. Built with **Flask** and **LangChain**.
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-## Project Structure
+A comprehensive **Retrieval-Augmented Generation (RAG)** framework for building intelligent knowledge-based Q&A systems. Built with **Flask**, **LangChain**, and featuring a modern web interface.
+
+## 🚀 Features
+
+- **🌐 Web Chat Interface**: Beautiful, responsive chat client with real-time interactions
+- **🔧 Flexible Configuration**: YAML-based configuration with environment variable overrides
+- **🤖 Multi-Provider Support**: OpenAI, Ollama, and HuggingFace model providers
+- **📄 Document Processing**: Support for JSON, TXT, MD, and PDF files
+- **🔍 Vector Search**: FAISS-powered semantic search
+- **⚡ RESTful API**: Complete API with health checks, configuration endpoints
+- **🧪 Testing Suite**: Comprehensive testing tools for model evaluation
+- **📱 Responsive Design**: Mobile-friendly chat interface
+- **⚙️ Easy Setup**: Automated environment setup scripts
+
+## 📁 Project Structure
 
 ```
 ragify/
-├── app.py               # Flask API (GET /, GET /health, GET /config, GET /providers, POST /ask)
-├── rag_chain.py         # RAG Pipeline (embeddings + vector DB + LLM)
-├── ingest.py            # Vector database creation from JSON files in ./docs
-├── model_providers.py   # Module for managing different model providers (OpenAI, Ollama, etc.)
-├── setup_env.sh         # Script to set up virtual environment and install dependencies
-├── test_models.py       # Script to test individual models
-├── test_multiple_models.sh # Script to test multiple model configurations
-├── requirements.txt     # Python dependencies
-├── docs/                # Source documents (JSON files organized by category)
-│   ├── CATEGORY_A/
-│   ├── CATEGORY_B/
-│   └── ...
-├── storage/             # Persistent FAISS index (auto-generated)
-└── .env.example         # Environment variables
+├── app.py                      # Main Flask application with API endpoints
+├── rag_chain.py               # RAG pipeline implementation
+├── ingest.py                  # Document ingestion and vector database creation
+├── model_providers.py         # Multi-provider model management
+├── config_manager.py          # Configuration management system
+├── config.yaml               # Main configuration file
+├── setup_env.sh              # Automated environment setup script
+├── requirements.txt          # Python dependencies
+├── client/                   # Web chat interface
+│   ├── index.html           # Chat client HTML
+│   ├── script.js            # Client-side JavaScript
+│   └── styles.css           # Responsive CSS styling
+├── templates/               # Flask templates
+│   └── api_docs.html       # API documentation template
+├── docs/                   # Knowledge base documents
+│   ├── GEOGRAPHY/          # Geography-related documents
+│   ├── RECIPES/           # Recipe and cooking documents
+│   └── TECH/              # Technology-related documents
+├── storage/               # FAISS vector database (auto-generated)
+├── test_models.py         # Model testing utilities
+├── test_multiple_models.sh # Batch testing script
+└── dotenv                 # Environment variables template
 ```
 
-## Quick Setup with Script
+## 🚀 Quick Start
 
-The easiest way to get started is using the automated setup script:
+### Option 1: Automated Setup (Recommended)
 
 ```bash
-# Give execution permissions to the script (if needed)
-chmod +x setup_env.sh
+# Clone the repository
+git clone <repository-url>
+cd ragify
 
-# Run the setup script
+# Run the automated setup script
+chmod +x setup_env.sh
 ./setup_env.sh
 ```
 
-The script will automatically:
-1. Create a Python virtual environment in the `venv/` folder
-2. Install all basic dependencies
-3. Offer the option to install dependencies for additional providers (Ollama, HuggingFace)
-4. Create a `.env` file with default configuration
+The script will:
+- Create a Python virtual environment
+- Install all dependencies
+- Set up environment variables
+- Offer provider-specific installations
 
-## Quick Start (manual)
-
-If you prefer to set up the environment manually:
+### Option 2: Manual Setup
 
 ```bash
-# 1. Create virtual environment (recommended)
+# 1. Create and activate virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Add OpenAI key (if using OpenAI as provider)
-cp .env.example .env
-echo 'OPENAI_API_KEY=sk‑...' >> .env
+# 3. Configure environment variables
+cp dotenv .env
+# Edit .env file with your API keys
 
-# 4. Prepare the knowledge base
-python ingest.py          # Reads JSON files in ./docs and builds the FAISS index
+# 4. Ingest documents to create vector database
+python ingest.py
 
-# 5. Run the API
+# 5. Start the server
 python app.py
 ```
 
-## Using Different Model Providers
+## 💬 Using the Chat Interface
 
-This project supports multiple language model (LLM) and embedding providers:
+Once the server is running, access the chat interface at:
 
-### Available Providers:
-- **OpenAI**: GPT models and embeddings (requires API key)
-- **Ollama**: Local models like Llama, Mistral (requires installing Ollama)
-- **HuggingFace**: Local models or via API
+**http://localhost:5000/chat**
 
-### Configuration through Environment Variables
+Features:
+- Real-time chat with the RAG system
+- Source document references with previews
+- Typing indicators and status monitoring
+- Message history persistence
+- Responsive design for mobile and desktop
+- Settings panel for customization
 
-You can configure providers in the `.env` file:
+## 🔧 Configuration
 
+RAGify uses a comprehensive YAML-based configuration system with environment variable overrides.
+
+### Configuration File (`config.yaml`)
+
+```yaml
+# Server settings
+server:
+  port: 5000
+  debug: true
+  host: "0.0.0.0"
+
+# Model configuration
+models:
+  defaults:
+    llm_provider: "openai"
+    llm_model: null  # Uses provider default
+    embedding_provider: "openai"
+    embedding_model: null  # Uses provider default
+    temperature: 0
+
+# Document processing
+document_processing:
+  chunk_size: 1000
+  chunk_overlap: 200
+
+# And much more...
 ```
-OPENAI_API_KEY=sk-...        # Required for using OpenAI
 
-# Provider configuration
-LLM_PROVIDER=openai          # openai, ollama, huggingface 
-LLM_MODEL=gpt-4o-mini        # Specific to each provider
-EMBEDDING_PROVIDER=openai    # openai, ollama, huggingface
-EMBEDDING_MODEL=text-embedding-3-large
-```
+### Environment Variables
 
-### Command Line Configuration
-
-When starting the server you can specify providers:
+Key environment variables for configuration:
 
 ```bash
-# Example with OpenAI
-python app.py --llm-provider openai --llm-model gpt-4o-mini
+# API Keys
+OPENAI_API_KEY=sk-...
 
-# Example with Ollama (requires Ollama to be installed)
+# Provider Selection
+LLM_PROVIDER=openai              # openai, ollama, huggingface
+LLM_MODEL=gpt-4o-mini
+EMBEDDING_PROVIDER=openai
+EMBEDDING_MODEL=text-embedding-3-large
+
+# Server Configuration
+PORT=5000
+FLASK_DEBUG=true
+```
+
+## 🤖 Model Providers
+
+### OpenAI (Default)
+```bash
+# Set your API key
+export OPENAI_API_KEY=sk-...
+
+# Run with OpenAI (default)
+python app.py --llm-provider openai --llm-model gpt-4o-mini
+```
+
+### Ollama (Local Models)
+```bash
+# Install Ollama first: https://ollama.ai
+# Pull required models
+ollama pull mistral
+ollama pull nomic-embed-text
+
+# Run with Ollama
 python app.py --llm-provider ollama --llm-model mistral --embedding-provider ollama --embedding-model nomic-embed-text
 ```
 
-### Installing Dependencies for Different Providers
-
-To use providers other than OpenAI, uncomment and install the necessary dependencies in `requirements.txt`:
-
+### HuggingFace
 ```bash
-# For HuggingFace
+# Install HuggingFace dependencies
 pip install langchain-huggingface transformers torch sentence-transformers accelerate
+
+# Run with HuggingFace
+python app.py --llm-provider huggingface --llm-model google/flan-t5-xxl
 ```
 
-## Querying the API
+## 🌐 API Endpoints
 
-The API starts at http://localhost:5000 with the following documentation:
+The Flask application provides a comprehensive RESTful API:
 
-- **GET /** - API documentation
-- **GET /health** - Check service status
-- **GET /config** - View current model configuration
-- **GET /providers** - List available providers
-- **POST /ask** - Make knowledge base queries
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | API documentation |
+| `/chat` | GET | Web chat interface |
+| `/health` | GET | Health check |
+| `/config` | GET | Current configuration |
+| `/providers` | GET | Available model providers |
+| `/ask` | POST | Query the knowledge base |
 
-### Query Example:
+### API Example
 
 ```bash
+# Query the knowledge base
 curl -X POST http://localhost:5000/ask \
      -H 'Content-Type: application/json' \
      -d '{"message": "What is the capital of France?"}'
 ```
 
-### Response:
-
+**Response:**
 ```json
 {
-  "answer": "The capital of France is Paris. It is the largest city in France and serves as the country's political, economic, and cultural center.",
+  "answer": "The capital of France is Paris...",
   "sources": [
     {
-      "source": "/path/to/ragify/docs/GEOGRAPHY/france.json",
+      "source": "docs/GEOGRAPHY/france.json",
       "title": "France Information",
       "url": "https://example.com/france",
-      "snippet": "Title: France Information\n\nDescription: France is a country located in Western Europe. Its capital is Paris, which is known for..."
+      "snippet": "France is a country located in Western Europe..."
     }
   ]
 }
 ```
 
-## Performance Testing
+## 📚 Knowledge Base Management
 
-The project includes tools to test and compare different model configurations:
+### Adding Documents
+
+RAGify supports multiple document formats:
 
 ```bash
-# Test a single configuration
-python test_models.py --model-name "test_name"
-
-# Test multiple model configurations automatically
-./test_multiple_models.sh
+# Supported formats
+docs/
+├── GEOGRAPHY/
+│   ├── countries.json    # Structured JSON data
+│   ├── cities.txt       # Plain text
+│   └── atlas.pdf        # PDF documents
+├── RECIPES/
+│   └── cooking.md       # Markdown files
 ```
 
-## Customization
+### Document Processing
 
-* Add more document files in `docs/`:
-  * JSON files following the existing structure
-  * Plain text (.txt) files
-  * Markdown (.md) files 
-  * PDF files (requires PyPDF2: `pip install PyPDF2`)
-* Run `python ingest.py` after adding new documents to rebuild the index.
-* You can modify the prompt in `rag_chain.py` to adjust how queries are processed.
-* To add conversational history, you can extend the system using `ConversationalRetrievalChain` from LangChain.
-
-## Recreating the Index with Different Embeddings
-
-If you want to change the embedding provider, you'll need to rebuild the FAISS index:
+After adding documents, rebuild the vector database:
 
 ```bash
-# Rebuild the index with a specific provider and model
+# Rebuild with current configuration
+python ingest.py
+
+# Rebuild with specific embedding provider
 python ingest.py --provider ollama --model nomic-embed-text
 ```
 
-## Main Dependencies
+## 🧪 Testing
 
-- Flask: Lightweight web framework
-- LangChain: Framework for LLM-based applications
-- FAISS: Library for similarity search and vector clustering
-- OpenAI/Ollama/HuggingFace: Language model and embedding providers
+### Testing Individual Models
+
+```bash
+python test_models.py --model-name "test_configuration"
+```
+
+### Batch Testing Multiple Configurations
+
+```bash
+./test_multiple_models.sh
+```
+
+### Custom Test Questions
+
+Configure test questions in `config.yaml`:
+
+```yaml
+testing:
+  default_questions:
+    - "What is the capital of France?"
+    - "How do I make sourdough bread?"
+    - "What equipment do I need for a podcast?"
+```
+
+## 🔧 Advanced Configuration
+
+### Custom Prompt Templates
+
+Modify the RAG prompt in `config.yaml`:
+
+```yaml
+prompts:
+  rag_template: |
+    You're a smart, relaxed assistant in your late 20s. You sound human—like someone who knows their stuff...
+    
+    Context:
+    {context}
+    
+    User Question:
+    {query}
+    
+    Answer:
+```
+
+### Retrieval Settings
+
+Fine-tune retrieval behavior:
+
+```yaml
+retrieval:
+  search_type: "similarity"     # similarity, mmr
+  top_k_results: 4             # Number of retrieved documents
+```
+
+### Document Processing
+
+Adjust chunk settings:
+
+```yaml
+document_processing:
+  chunk_size: 1000            # Characters per chunk
+  chunk_overlap: 200          # Overlap between chunks
+```
+
+## 🚀 Deployment
+
+### Development
+```bash
+python app.py --debug
+```
+
+### Production
+```bash
+# Using Gunicorn
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+
+# Using Docker (create Dockerfile)
+docker build -t ragify .
+docker run -p 5000:5000 ragify
+```
+
+## 🤝 Contributing
+
+RAGify is open source under the BSD-3-Clause license. Contributions are welcome!
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [LangChain](https://langchain.com/) for RAG pipeline management
+- [FAISS](https://github.com/facebookresearch/faiss) for efficient vector similarity search
+- [Flask](https://flask.palletsprojects.com/) for the web framework
+- Modern CSS and JavaScript for the responsive chat interface
+
+## 📬 Support
+
+- Create an [issue](https://github.com/your-repo/ragify/issues) for bug reports
+- Start a [discussion](https://github.com/your-repo/ragify/discussions) for questions
+- Check the [documentation](http://localhost:5000/) when running the server
+
+---
+
+**RAGify** - Making knowledge accessible through intelligent conversation. 🤖✨
