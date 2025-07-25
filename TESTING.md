@@ -43,7 +43,7 @@ If you prefer to set up the environment manually:
    ```bash
    python ingest.py
    ```
-   This will process all JSON files in the `docs/` directory and create a FAISS index in the `storage/` folder.
+   This will process all JSON files in the `docs/` directory and create a Qdrant collection.
 
 ## Starting the Server
 
@@ -131,45 +131,30 @@ curl -X POST http://localhost:5000/ask \
      -d '{"message": "What is the capital of France?"}'
 ```
 
-### 4. Testing with Ollama (local models)
+### 4. Testing with Vertex AI (Google Cloud)
 
-First, make sure you have Ollama installed and running:
+First, make sure you have set up your Google Cloud credentials:
 ```bash
-# Install Ollama according to instructions at https://ollama.ai/
-
-# Download necessary models
-ollama pull mistral
-ollama pull nomic-embed-text
+# Set up Google Cloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 
 # Install necessary dependencies
-pip install langchain_community
+pip install google-cloud-aiplatform google-auth langchain-google-vertexai
 ```
 
-Then, run the server with Ollama as the provider:
+Then, run the server with Vertex AI as the provider:
 ```bash
-python app.py --llm-provider ollama --llm-model mistral --embedding-provider ollama --embedding-model nomic-embed-text
+python app.py --llm-provider vertexai --llm-model gemini-pro --embedding-provider vertexai --embedding-model textembedding-gecko@latest
 ```
 
-If you need to recreate the index with Ollama embeddings:
+You can also specify the Google Cloud project and region:
 ```bash
-python ingest.py --provider ollama --model nomic-embed-text
+python app.py --llm-provider vertexai --vertex-project your-gcp-project-id --vertex-region us-central1
 ```
 
-### 5. Testing with HuggingFace (local models or API)
-
-First, install the necessary dependencies:
+If you need to recreate the index with Vertex AI embeddings:
 ```bash
-pip install langchain-huggingface transformers torch sentence-transformers accelerate
-```
-
-Then, run the server with HuggingFace as the provider:
-```bash
-python app.py --llm-provider huggingface --llm-model google/flan-t5-base --embedding-provider huggingface --embedding-model BAAI/bge-small-en-v1.5
-```
-
-If you need to recreate the index with HuggingFace embeddings:
-```bash
-python ingest.py --provider huggingface --model BAAI/bge-small-en-v1.5
+python ingest.py --provider vertexai --model textembedding-gecko@latest
 ```
 
 ## Comparing Results Between Different Models
@@ -194,7 +179,7 @@ with open('test_questions.txt', 'r') as f:
     questions = [line.strip() for line in f if line.strip()]
 
 # Configure model to test
-model_name = "openai"  # Change according to the model being tested
+model_name = "vertexai"  # Change according to the model being tested (openai or vertexai)
 
 # Folder for results
 results_dir = Path(f"results_{model_name}")
@@ -286,19 +271,14 @@ If you receive an error related to the OpenAI API, check that:
 - You have sufficient balance in your OpenAI account
 - Your internet connection works correctly
 
-### Error with Ollama
+### Error with Vertex AI
 
-If you have problems using Ollama:
-- Verify that Ollama is installed and running
-- Check that you've downloaded the necessary models
-- Ensure that `langchain_community` is installed
-
-### Error with HuggingFace
-
-If you have problems using HuggingFace models:
-- Verify that all dependencies are installed
-- Ensure you have enough RAM and disk space
-- Consider using smaller models if you have resource limitations
+If you have problems using Vertex AI:
+- Verify that your Google Cloud service account JSON file is valid and has the correct permissions
+- Check that the service account has access to the Vertex AI API
+- Ensure that the Google Cloud project ID and region are correctly specified
+- Verify that the requested models are available in your specified region
+- Make sure all required dependencies are installed (`google-cloud-aiplatform`, `google-auth`, `langchain-google-vertexai`)
 
 ### Error Processing JSON Documents
 

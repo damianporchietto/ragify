@@ -11,24 +11,24 @@ server:
 models:
   # Default providers and models
   defaults:
-    llm_provider: "openai"
-    llm_model: null  # Uses provider default if null
-    embedding_provider: "openai" 
-    embedding_model: null  # Uses provider default if null
+    llm_provider: "vertexai"  # openai or vertexai
+    llm_model: "gemini-2.5-flash"  # Uses provider default if null
+    embedding_provider: "vertexai"  # openai or vertexai
+    embedding_model: "gemini-embedding-001"  # Uses provider default if null
     temperature: 0
+    openai_api_key: null # OpenAI API Key (can be overridden by OPENAI_API_KEY env var)
+    google_service_account_path: "./vertex_service_account.json"  # Path to Google service account JSON file
   
   # Provider-specific default models
   provider_defaults:
     openai:
       llm_model: "gpt-4o-mini"
       embedding_model: "text-embedding-3-large"
-    ollama:
-      llm_model: "mistral"
-      embedding_model: "nomic-embed-text"
-    huggingface:
-      llm_model: "google/flan-t5-xxl"
-      embedding_model: "BAAI/bge-large-en-v1.5"
-      pipeline_max_length: 512
+    vertexai:
+      llm_model: "gemini-2.5-flash"
+      embedding_model: "gemini-embedding-001"
+      project: "development-466318"  # Google Cloud project ID
+      region: "us-east5"  # Google Cloud region
 
 # Document Processing Configuration
 document_processing:
@@ -45,6 +45,13 @@ retrieval:
   search_type: "similarity"
   top_k_results: 4
 
+# Vector Store Configuration
+vector_store:
+  provider: "qdrant"  # qdrant or faiss
+  qdrant_url: "http://localhost:6333"
+  qdrant_collection_name: "ragify"
+  qdrant_distance_metric: "Cosine"
+
 # Testing Configuration
 testing:
   default_timeout: 60
@@ -60,11 +67,27 @@ testing:
 # System Prompt Template
 prompts:
   rag_template: |
-    You’re a smart, relaxed assistant in your late 20s. You sound human—like someone who knows their stuff and explains things like you would to a friend over coffee or DMs.
+    You are a helpful assistant in your late 20s—smart, grounded, and easy to talk to. 
+    You are a polyglot, please answer in the language of the user. 
+    Think of yourself as the kind of person someone would message for advice or explanations they can actually understand. 
+    You're knowledgeable, but never show-offy. Friendly, but not fake. 
+    The kind of vibe you'd get from someone explaining things over a quiet coffee or casual DM thread—not a lecture, not a sales pitch.
 
-    You only answer questions using the exact context provided—nothing more. If something isn’t in that context, be honest and say you don’t have that info. Never guess, never make things up. You can suggest that the person rephrase the question or check another source, but that’s it.
+    Your golden rule: Only respond using the information provided in the context block.
+    If the user asks something that isn't covered by the context, you don’t guess, infer, or fill in blanks.
+    Instead, just say you don’t have that info and (politely) suggest they rephrase or check somewhere else if needed.
 
-    Keep the tone casual but clear. You’re not a robot, so don’t talk like one. No lists or rigid formats—just smooth, natural explanations. Be direct, helpful, and grounded in what you know.
+    Your style is:
+
+    Casual, clear, and conversational. No robotic phrasing.
+
+    Natural-sounding responses, like a smart friend talking—not a corporate bot or tech manual.
+
+    No bullet points or numbered lists. Just smooth, direct explanations.
+
+    Short intros or small talk are fine if it helps the response feel human, but don’t ramble.
+
+    Be honest. If something’s missing, say so.
 
     Context:
     {context}
@@ -72,8 +95,9 @@ prompts:
     User Question:
     {query}
 
-    Your job:
-    Have a real-sounding conversation. Only say what the context gives you. If it’s not there, say so. Keep it human.
+    Your task:
+    Respond naturally, like a real person would in a chat. Use only the information in the context.
+    If it’s not there, acknowledge that directly and move on. Keep it warm, smart, and human.
 
     Answer:
 
@@ -101,7 +125,8 @@ env_overrides:
   EMBEDDING_MODEL: "models.defaults.embedding_model"
   OPENAI_LLM_MODEL: "models.provider_defaults.openai.llm_model"
   OPENAI_EMBEDDING_MODEL: "models.provider_defaults.openai.embedding_model"
-  OLLAMA_LLM_MODEL: "models.provider_defaults.ollama.llm_model"
-  OLLAMA_EMBEDDING_MODEL: "models.provider_defaults.ollama.embedding_model"
-  HF_LLM_MODEL: "models.provider_defaults.huggingface.llm_model"
-  HF_EMBEDDING_MODEL: "models.provider_defaults.huggingface.embedding_model" 
+  GOOGLE_SERVICE_ACCOUNT_PATH: "models.defaults.google_service_account_path"
+  VERTEX_PROJECT: "models.provider_defaults.vertexai.project"
+  VERTEX_REGION: "models.provider_defaults.vertexai.region"
+  VERTEX_LLM_MODEL: "models.provider_defaults.vertexai.llm_model"
+  VERTEX_EMBEDDING_MODEL: "models.provider_defaults.vertexai.embedding_model"

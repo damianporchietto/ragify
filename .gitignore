@@ -7,3 +7,4 @@ __pycache__/
 .env.test.local
 .env.production.local
 storage/
+vertex_service_account.json

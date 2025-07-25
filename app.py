@@ -134,11 +134,11 @@ def ask():
 def parse_args():
     parser = argparse.ArgumentParser(description='Run the RAG Flask API with configurable models')
     parser.add_argument('--llm-provider', type=str, default=DEFAULT_LLM_PROVIDER,
-                        help='LLM provider (openai, ollama, huggingface)')
+                        help='LLM provider (openai, vertexai)')
     parser.add_argument('--llm-model', type=str, default=DEFAULT_LLM_MODEL,
                         help='Specific LLM model to use')
     parser.add_argument('--embedding-provider', type=str, default=DEFAULT_EMBEDDING_PROVIDER,
-                        help='Embedding provider (openai, ollama, huggingface)')
+                        help='Embedding provider (openai, vertexai)')
     parser.add_argument('--embedding-model', type=str, default=DEFAULT_EMBEDDING_MODEL,
                         help='Specific embedding model to use')
     parser.add_argument('--port', type=int, default=config.get_port(),

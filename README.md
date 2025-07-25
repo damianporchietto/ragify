@@ -8,9 +8,9 @@ A comprehensive **Retrieval-Augmented Generation (RAG)** framework for building 
 
 - **🌐 Web Chat Interface**: Beautiful, responsive chat client with real-time interactions
 - **🔧 Flexible Configuration**: YAML-based configuration with environment variable overrides
-- **🤖 Multi-Provider Support**: OpenAI, Ollama, and HuggingFace model providers
+- **🤖 Multi-Provider Support**: OpenAI and Vertex AI (Google Cloud) model providers
 - **📄 Document Processing**: Support for JSON, TXT, MD, and PDF files
-- **🔍 Vector Search**: FAISS-powered semantic search
+- **🔍 Vector Search**: Qdrant-powered semantic search
 - **⚡ RESTful API**: Complete API with health checks, configuration endpoints
 - **🧪 Testing Suite**: Comprehensive testing tools for model evaluation
 - **📱 Responsive Design**: Mobile-friendly chat interface
@@ -38,7 +38,7 @@ ragify/
 │   ├── GEOGRAPHY/          # Geography-related documents
 │   ├── RECIPES/           # Recipe and cooking documents
 │   └── TECH/              # Technology-related documents
-├── storage/               # FAISS vector database (auto-generated)
+├── qdrant_data/           # Qdrant vector database storage (auto-generated)
 ├── test_models.py         # Model testing utilities
 ├── test_multiple_models.sh # Batch testing script
 └── dotenv                 # Environment variables template
@@ -138,10 +138,17 @@ Key environment variables for configuration:
 OPENAI_API_KEY=sk-...
 
 # Provider Selection
-LLM_PROVIDER=openai              # openai, ollama, huggingface
+LLM_PROVIDER=openai              # openai, vertexai
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=openai
 EMBEDDING_MODEL=text-embedding-3-large
+
+# Google Cloud / Vertex AI (if using vertexai provider)
+GOOGLE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
+VERTEX_PROJECT=your-gcp-project-id
+VERTEX_REGION=us-central1
+VERTEX_LLM_MODEL=gemini-pro
+VERTEX_EMBEDDING_MODEL=textembedding-gecko@latest
 
 # Server Configuration
 PORT=5000
@@ -159,24 +166,16 @@ export OPENAI_API_KEY=sk-...
 python app.py --llm-provider openai --llm-model gpt-4o-mini
 ```
 
-### Ollama (Local Models)
+### Vertex AI (Google Cloud)
 ```bash
-# Install Ollama first: https://ollama.ai
-# Pull required models
-ollama pull mistral
-ollama pull nomic-embed-text
+# Set up Google Cloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 
-# Run with Ollama
-python app.py --llm-provider ollama --llm-model mistral --embedding-provider ollama --embedding-model nomic-embed-text
-```
+# Run with Vertex AI
+python app.py --llm-provider vertexai --llm-model gemini-pro --embedding-provider vertexai --embedding-model textembedding-gecko@latest
 
-### HuggingFace
-```bash
-# Install HuggingFace dependencies
-pip install langchain-huggingface transformers torch sentence-transformers accelerate
-
-# Run with HuggingFace
-python app.py --llm-provider huggingface --llm-model google/flan-t5-xxl
+# Additional configuration options
+python app.py --llm-provider vertexai --vertex-project your-gcp-project-id --vertex-region us-central1
 ```
 
 ## 🌐 API Endpoints
@@ -242,7 +241,7 @@ After adding documents, rebuild the vector database:
 python ingest.py
 
 # Rebuild with specific embedding provider
-python ingest.py --provider ollama --model nomic-embed-text
+python ingest.py --provider vertexai --model textembedding-gecko@latest
 ```
 
 ## 🧪 Testing
@@ -346,7 +345,7 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 ## 🙏 Acknowledgments
 
 - Built with [LangChain](https://langchain.com/) for RAG pipeline management
-- [FAISS](https://github.com/facebookresearch/faiss) for efficient vector similarity search
+- [Qdrant](https://qdrant.tech/) for efficient vector similarity search
 - [Flask](https://flask.palletsprojects.com/) for the web framework
 - Modern CSS and JavaScript for the responsive chat interface
 

@@ -6,13 +6,15 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.vectorstores import FAISS
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
 
 from model_providers import get_llm_model, get_embeddings_model
 from ingest import ingest_and_build
 from config_manager import config
 
-STORAGE_PATH = Path(__file__).resolve().parent / config.get_storage_dir()
+# Explicitly reload config to ensure latest values are used
+config.load_config()
 
 class RAGPipeline:
     def __init__(self, 
@@ -25,9 +27,9 @@ class RAGPipeline:
         Initialize the RAG pipeline with configurable model providers.
         
         Args:
-            llm_provider: Provider for the LLM ("openai", "ollama", "huggingface")
+            llm_provider: Provider for the LLM ("openai", "vertexai")
             llm_model: Optional specific LLM model to use
-            embedding_provider: Provider for embeddings ("openai", "ollama", "huggingface")
+            embedding_provider: Provider for embeddings ("openai", "vertexai")
             embedding_model: Optional specific embedding model to use
             temperature: Temperature for text generation
         """
@@ -39,14 +41,28 @@ class RAGPipeline:
         # Initialize embeddings model
         self.embeddings = get_embeddings_model(provider=embedding_provider, model_name=embedding_model)
         
-        # Try to load local FAISS index if it exists, else build it
-        if STORAGE_PATH.exists() and any(STORAGE_PATH.iterdir()):
-            self.vector_store = FAISS.load_local(str(STORAGE_PATH), self.embeddings, allow_dangerous_deserialization=True)
-        else:
+        # Get Qdrant configuration
+        qdrant_url = config.get('vector_store', {}).get('qdrant_url', 'http://localhost:6333')
+        collection_name = config.get('vector_store', {}).get('qdrant_collection_name', 'my_collection')
+        
+        # Initialize Qdrant client
+        client = QdrantClient(url=qdrant_url)
+        
+        # Try to connect to existing collection, else build it
+        try:
+            collection_info = client.get_collection(collection_name)
+            print(f"Connected to existing Qdrant collection '{collection_name}' with {collection_info.points_count} points")
+            self.vector_store = QdrantVectorStore(
+                client=client,
+                collection_name=collection_name,
+                embedding=self.embeddings
+            )
+        except Exception:
+            print(f"Collection '{collection_name}' not found. Building new collection...")
             # Build and persist the vectorstore
             self.vector_store = ingest_and_build(
-                str(STORAGE_PATH), 
-                embedding_provider=embedding_provider, 
+                collection_name=collection_name,
+                embedding_provider=embedding_provider,
                 embedding_model=embedding_model
             )
 

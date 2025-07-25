@@ -55,32 +55,6 @@ pip install --upgrade pip setuptools wheel
 echo -e "\n${GREEN}Installing base requirements from ${REQUIREMENTS_FILE}...${NC}"
 pip install -r "${REQUIREMENTS_FILE}"
 
-# Ask if user wants to install optional dependencies
-echo -e "\n${YELLOW}Do you want to install optional dependencies for additional model providers?${NC}"
-echo "1) OpenAI only (already installed with base requirements)"
-echo "2) Add Ollama support (local models)"
-echo "3) Add HuggingFace support (requires more disk space)"
-echo "4) Install all dependencies (recommended for full testing)"
-echo "Enter your choice (1-4):"
-read -r choice
-
-case $choice in
-    2)
-        echo -e "\n${GREEN}Installing Ollama dependencies...${NC}"
-        pip install langchain_community
-        ;;
-    3)
-        echo -e "\n${GREEN}Installing HuggingFace dependencies...${NC}"
-        pip install langchain-huggingface transformers torch sentence-transformers accelerate
-        ;;
-    4)
-        echo -e "\n${GREEN}Installing all optional dependencies...${NC}"
-        pip install langchain_community langchain-huggingface transformers torch sentence-transformers accelerate
-        ;;
-    *)
-        echo -e "\n${GREEN}Skipping optional dependencies.${NC}"
-        ;;
-esac
 
 # Read default port from config file if available
 DEFAULT_PORT=5000
@@ -108,11 +82,6 @@ if [ ! -f "${ENV_FILE}" ]; then
 PORT=${DEFAULT_PORT}
 
 # Default model providers
-LLM_PROVIDER=openai
-# LLM_MODEL=gpt-4o-mini
-
-EMBEDDING_PROVIDER=openai
-# EMBEDDING_MODEL=text-embedding-3-large
 
 # Debug mode (set to empty or False in production)
 FLASK_DEBUG=True

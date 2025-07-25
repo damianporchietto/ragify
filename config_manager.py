@@ -176,6 +176,10 @@ class ConfigManager:
         """Get results directory prefix."""
         return self.get('paths.results_dir_prefix', 'results')
     
+    def get_openai_api_key(self) -> Optional[str]:
+        """Get OpenAI API key."""
+        return self.get('models.defaults.openai_api_key')
+
     def get_huggingface_pipeline_max_length(self) -> int:
         """Get HuggingFace pipeline max length."""
         return self.get('models.provider_defaults.huggingface.pipeline_max_length', 512)
