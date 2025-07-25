@@ -67,6 +67,29 @@ def validate_request_data(data: Dict[str, Any]) -> Optional[str]:
     if len(message) > 10000:  # 10KB limit
         return "Message too long (max 10,000 characters)"
     
+    # Validate chat history if provided
+    chat_history = data.get('chat_history', [])
+    if not isinstance(chat_history, list):
+        return "chat_history must be an array"
+    
+    # Limit chat history to the configured maximum (in terms of messages, not interactions)
+    max_history_messages = config.get_chat_history_length() * 2  # Allow user+assistant pairs
+    if len(chat_history) > max_history_messages:
+        return f"chat_history too long (max {max_history_messages} messages)"
+    
+    for i, interaction in enumerate(chat_history):
+        if not isinstance(interaction, dict):
+            return f"chat_history[{i}] must be an object"
+        
+        if 'role' not in interaction or 'content' not in interaction:
+            return f"chat_history[{i}] must contain 'role' and 'content' fields"
+        
+        if interaction['role'] not in ['user', 'assistant']:
+            return f"chat_history[{i}].role must be 'user' or 'assistant'"
+        
+        if not isinstance(interaction['content'], str):
+            return f"chat_history[{i}].content must be a string"
+    
     return None
 
 def get_rag_chain():
@@ -158,13 +181,14 @@ def ask():
             return jsonify({'error': validation_error}), 400
         
         question = data.get('message') or data.get('question')
-        logger.info(f"Processing question: {question[:100]}...")
+        chat_history = data.get('chat_history', [])
+        logger.info(f"Processing question: {question[:100]}... with {len(chat_history)} history items")
         
         # Lazy load RAG chain on first request
         chain = get_rag_chain()
         
-        # Process the query
-        result = chain(question)
+        # Process the query with chat history
+        result = chain(question, chat_history=chat_history)
         
         answer = result.get('result') or result.get('answer')
         if not answer:

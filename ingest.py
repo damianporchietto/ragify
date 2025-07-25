@@ -25,8 +25,59 @@ except ImportError:
 # Part of the ragify framework - a RAG system for knowledge-based Q&A
 DOCS_DIR = Path(__file__).resolve().parent / config.get_docs_dir()
 
+def flatten_json_to_text(data, parent_key='', separator=': ', max_depth=10, current_depth=0):
+    """
+    Recursively flatten any JSON structure into human-readable text.
+    
+    Args:
+        data: The JSON data (dict, list, or primitive)
+        parent_key: The parent key for nested structures
+        separator: Separator between key and value
+        max_depth: Maximum recursion depth to prevent infinite loops
+        current_depth: Current recursion depth
+        
+    Returns:
+        List of formatted text lines
+    """
+    if current_depth > max_depth:
+        return [f"{parent_key}: [Max depth reached]"]
+    
+    lines = []
+    
+    if isinstance(data, dict):
+        for key, value in data.items():
+            # Format the key nicely
+            formatted_key = key.replace('_', ' ').replace('-', ' ').title()
+            full_key = f"{parent_key}.{formatted_key}" if parent_key else formatted_key
+            
+            if isinstance(value, (dict, list)):
+                # Add section header for complex structures
+                if value:  # Only add if not empty
+                    lines.append(f"\n{full_key}:")
+                    lines.extend(flatten_json_to_text(value, full_key, separator, max_depth, current_depth + 1))
+            elif value is not None and str(value).strip():  # Skip empty/null values
+                lines.append(f"{full_key}{separator}{value}")
+                
+    elif isinstance(data, list):
+        for i, item in enumerate(data):
+            if isinstance(item, (dict, list)):
+                item_key = f"{parent_key}[{i+1}]" if parent_key else f"Item {i+1}"
+                lines.extend(flatten_json_to_text(item, item_key, separator, max_depth, current_depth + 1))
+            elif item is not None and str(item).strip():
+                lines.append(f"{parent_key}[{i+1}]{separator}{item}")
+                
+    else:
+        # Primitive value
+        if data is not None and str(data).strip():
+            lines.append(f"{parent_key}{separator}{data}")
+    
+    return lines
+
 def process_json_file(json_path: Path) -> List[Document]:
     """Process a JSON file and convert it to Document objects.
+    
+    This function can handle any JSON structure by recursively flattening it
+    into human-readable text format.
     
     Args:
         json_path: Path to the JSON file
@@ -38,28 +89,42 @@ def process_json_file(json_path: Path) -> List[Document]:
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+        
+        # Use generic flattening to convert any JSON structure to text
+        content_lines = flatten_json_to_text(data)
+        content = "\n".join(content_lines)
+        
+        # Extract metadata - try common fields but don't fail if they don't exist
+        title = ""
+        url = ""
+        if isinstance(data, dict):
+            # Try common title fields
+            for title_field in ['title', 'name', 'subject', 'heading', 'label']:
+                if title_field in data and data[title_field]:
+                    title = str(data[title_field])
+                    break
             
-        # Extract content from JSON structure
-        content_parts = []
-        content_parts.append(f"Title: {data.get('title', 'No title')}")
-        content_parts.append(f"Description: {data.get('description', 'No description')}")
+            # Try common URL fields
+            for url_field in ['url', 'link', 'href', 'uri', 'web_url', 'website']:
+                if url_field in data and data[url_field]:
+                    url = str(data[url_field])
+                    break
         
-        # Process requirements if they exist
-        if 'requirements' in data:
-            for req in data['requirements']:
-                if 'title' in req and 'content' in req:
-                    content_parts.append(f"{req['title']}: {req['content']}")
+        # Debug logging to monitor content extraction
+        print(f"Processing JSON: {json_path.name}")
+        print(f"Extracted content length: {len(content)} characters")
+        print(f"Content preview: {content[:200]}...")
         
-        # Create document with content and metadata
-        content = "\n\n".join(content_parts)
         documents.append(
             Document(
                 page_content=content,
                 metadata={
                     "source": str(json_path),
-                    "title": data.get("title", ""),
-                    "url": data.get("url", ""),
-                    "file_type": "json"
+                    "title": title,
+                    "url": url,
+                    "file_type": "json",
+                    "content_length": len(content),
+                    "filename": json_path.name
                 }
             )
         )
@@ -223,13 +288,25 @@ def ingest_and_build(collection_name: str = None, embedding_provider: str = None
                 pdf_count += 1
         
         # Split the documents using configurable parameters
+        chunk_size = config.get_chunk_size()
+        chunk_overlap = config.get_chunk_overlap()
+        
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=config.get_chunk_size(),
-            chunk_overlap=config.get_chunk_overlap()
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
         )
         splits = splitter.split_documents(documents)
         
-        print(f"Processed {json_count} JSON files, {text_count} text files, and {pdf_count} PDF files into {len(splits)} chunks")
+        print(f"Processed {json_count} JSON files, {text_count} text files, and {pdf_count} PDF files")
+        print(f"Document chunking: {len(documents)} documents -> {len(splits)} chunks")
+        print(f"Chunk settings: size={chunk_size}, overlap={chunk_overlap}")
+        
+        # Debug: Show sample chunk information
+        if splits:
+            print(f"Sample chunk preview (first chunk):")
+            print(f"  Length: {len(splits[0].page_content)} characters")
+            print(f"  Content: {splits[0].page_content[:150]}...")
+            print(f"  Metadata: {splits[0].metadata}")
         
         # Get embedding dimension by creating a test embedding
         test_embedding = embeddings.embed_query("test")

@@ -5,6 +5,50 @@ class ChatClient {
         this.maxMessages = 50;
         this.chatMessages = [];
         this.initialize();
+        this.setupMarkdown();
+    }
+
+    setupMarkdown() {
+        // Configure marked for secure markdown rendering
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                sanitize: false, // We'll sanitize manually
+                highlight: function(code, lang) {
+                    if (typeof Prism !== 'undefined' && lang && Prism.languages[lang]) {
+                        return Prism.highlight(code, Prism.languages[lang], lang);
+                    }
+                    return code;
+                }
+            });
+        }
+    }
+
+    renderMarkdown(content) {
+        if (typeof marked === 'undefined') {
+            // Fallback to plain text if marked is not available
+            return this.escapeHtml(content);
+        }
+
+        try {
+            // Basic sanitization - remove script tags and dangerous attributes
+            const sanitized = content
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/on\w+="[^"]*"/gi, '')
+                .replace(/javascript:/gi, '');
+
+            return marked.parse(sanitized);
+        } catch (error) {
+            console.warn('Markdown rendering failed:', error);
+            return this.escapeHtml(content);
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     getApiUrl() {
@@ -138,17 +182,49 @@ class ChatClient {
         }
     }
 
+    getRecentChatHistory(limit = 5) {
+        const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        
+        // Filter out system messages
+        const filteredHistory = history.filter(msg => msg.sender !== 'system');
+        
+        // Get only the last 'limit' interactions (each interaction = 1 user + 1 assistant message)
+        // So we need the last limit*2 messages, but ensure we don't exceed the limit
+        const maxMessages = Math.min(limit * 2, filteredHistory.length);
+        const recentMessages = filteredHistory.slice(-maxMessages);
+        
+        // Convert to the format expected by the API
+        const recentHistory = recentMessages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.content
+        }));
+        
+        // Ensure we don't exceed the configured limit
+        return recentHistory.slice(-limit * 2);
+    }
+
     async sendMessage(message) {
+        // Get recent chat history to send as context
+        const chatHistory = this.getRecentChatHistory(5);
+        
+        // Debug logging
+        console.log(`Sending ${chatHistory.length} history messages:`, chatHistory);
+        
         const response = await fetch(`${this.apiUrl}/ask`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message }),
+            body: JSON.stringify({
+                message: message,
+                chat_history: chatHistory
+            }),
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
 
         return await response.json();
@@ -167,13 +243,23 @@ class ChatClient {
 
         const messageText = document.createElement('div');
         messageText.className = 'message-text';
-        messageText.textContent = content;
+        
+        // Render markdown for bot messages, plain text for user messages
+        if (sender === 'bot') {
+            messageText.innerHTML = this.renderMarkdown(content);
+            // Trigger syntax highlighting if Prism is available
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAllUnder(messageText);
+            }
+        } else {
+            messageText.textContent = content;
+        }
 
         const messageTime = document.createElement('div');
         messageTime.className = 'message-time';
-        messageTime.textContent = new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+        messageTime.textContent = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
         });
 
         messageContent.appendChild(messageText);

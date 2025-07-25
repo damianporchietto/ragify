@@ -136,9 +136,17 @@ class ConfigManager:
         """Get top k results for retriever."""
         return self.get('retrieval.top_k_results', 4)
     
+    def get_mmr_diversity_score(self) -> float:
+        """Get MMR diversity score for retriever."""
+        return self.get('retrieval.mmr_diversity_score', 0.5)
+    
     def get_rag_prompt_template(self) -> str:
         """Get RAG prompt template."""
         return self.get('prompts.rag_template', '')
+    
+    def get_query_rewrite_template(self) -> str:
+        """Get query rewrite prompt template."""
+        return self.get('prompts.query_rewrite_template', '')
     
     def get_testing_config(self) -> Dict[str, Any]:
         """Get testing configuration."""
@@ -195,6 +203,14 @@ class ConfigManager:
     def get_host(self) -> str:
         """Get server host."""
         return self.get('server.host', '0.0.0.0')
+    
+    def get_chat_history_length(self) -> int:
+        """Get chat history length."""
+        return self.get('chat.history_length', 5)
+    
+    def get_max_context_tokens(self) -> int:
+        """Get maximum context tokens for chat history."""
+        return self.get('chat.max_context_tokens', 2000)
 
 # Global configuration instance
-config = ConfigManager() 
+config = ConfigManager()

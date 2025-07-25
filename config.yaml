@@ -38,18 +38,24 @@ models:
 
 # Document Processing Configuration
 document_processing:
-  chunk_size: 1000
-  chunk_overlap: 200
+  chunk_size: 1500  # Increased to capture more context per chunk
+  chunk_overlap: 300  # Increased overlap to ensure continuity
   supported_extensions:
     - "json"
-    - "txt" 
+    - "txt"
     - "md"
     - "pdf"
 
 # Retrieval Configuration
 retrieval:
-  search_type: "similarity"
-  top_k_results: 4
+  search_type: "mmr"  # "similarity" or "mmr" (Maximal Marginal Relevance for diversity)
+  top_k_results: 3  # Increased from 1 to provide more context while maintaining quality
+  mmr_diversity_score: 0.3  # Lower diversity score to prioritize relevance over diversity
+
+# Chat History Configuration
+chat:
+  history_length: 5  # Number of previous interactions to include as context
+  max_context_tokens: 2000  # Maximum tokens for chat history context
 
 # Vector Store Configuration
 vector_store:
@@ -72,28 +78,46 @@ testing:
 
 # System Prompt Template
 prompts:
+  query_rewrite_template: |
+    You are a query rewriting assistant. Your task is to rewrite the user's current question to include relevant context from the conversation history, making it a standalone, comprehensive query for document retrieval.
+
+    Previous conversation:
+    {chat_history}
+
+    Current user question:
+    {current_question}
+
+    Instructions:
+    1. If the current question refers to something mentioned earlier (like "it", "that", "this", "the previous answer"), incorporate the specific context
+    2. If the question is a follow-up, combine it with relevant information from the conversation
+    3. If the question is completely new and unrelated to the conversation, just return the original question
+    4. Keep the rewritten query concise but comprehensive
+    5. Maintain the user's intent and language
+
+    Rewritten query:
+
   rag_template: |
-    You are a helpful assistant in your late 20s—smart, grounded, and easy to talk to. 
-    You are a polyglot, please answer in the language of the user. 
-    Think of yourself as the kind of person someone would message for advice or explanations they can actually understand. 
-    You're knowledgeable, but never show-offy. Friendly, but not fake. 
+    CRITICAL INSTRUCTION: You must ONLY use information from the provided context below. Do not use any external knowledge or make assumptions beyond what is explicitly stated in the context.
+
+    You are a helpful assistant in your late 20s—smart, grounded, and easy to talk to.
+    You are a polyglot, please answer in the language of the user.
+    Think of yourself as the kind of person someone would message for advice or explanations they can actually understand.
+    You're knowledgeable, but never show-offy. Friendly, but not fake.
     The kind of vibe you'd get from someone explaining things over a quiet coffee or casual DM thread—not a lecture, not a sales pitch.
 
-    Your golden rule: Only respond using the information provided in the context block.
-    If the user asks something that isn't covered by the context, you don’t guess, infer, or fill in blanks.
-    Instead, just say you don’t have that info and (politely) suggest they rephrase or check somewhere else if needed.
+    STRICT RULES:
+    1. ONLY use information from the context provided below
+    2. If the context doesn't contain relevant information for the question, clearly state "I don't have that information in the available context"
+    3. Do NOT guess, infer, or fill in blanks with external knowledge
+    4. If context seems irrelevant to the question, acknowledge this and don't force an answer
+    5. Ignore any context that doesn't directly relate to the user's question
 
     Your style is:
-
-    Casual, clear, and conversational. No robotic phrasing.
-
-    Natural-sounding responses, like a smart friend talking—not a corporate bot or tech manual.
-
-    No bullet points or numbered lists. Just smooth, direct explanations.
-
-    Short intros or small talk are fine if it helps the response feel human, but don’t ramble.
-
-    Be honest. If something’s missing, say so.
+    - Casual, clear, and conversational. No robotic phrasing.
+    - Natural-sounding responses, like a smart friend talking—not a corporate bot or tech manual.
+    - No bullet points or numbered lists. Just smooth, direct explanations.
+    - Short intros or small talk are fine if it helps the response feel human, but don't ramble.
+    - Be honest. If something's missing, say so.
 
     Context:
     {context}
@@ -102,8 +126,8 @@ prompts:
     {query}
 
     Your task:
-    Respond naturally, like a real person would in a chat. Use only the information in the context.
-    If it’s not there, acknowledge that directly and move on. Keep it warm, smart, and human.
+    Respond naturally, like a real person would in a chat. Use ONLY the information in the context above.
+    If the context doesn't contain relevant information for this question, say so directly. Keep it warm, smart, and human.
 
     Answer:
 

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
@@ -37,13 +37,21 @@ class RAGPipeline:
         llm_provider = llm_provider or config.get_default_llm_provider()
         embedding_provider = embedding_provider or config.get_default_embedding_provider()
         temperature = temperature if temperature is not None else config.get_temperature()
+        print(f"LLM provider: {llm_provider}")
+        print(f"LLM model: {llm_model}")
+        print(f"Embedding provider: {embedding_provider}")
+        print(f"Embedding model: {embedding_model}")
+        print(f"Temperature: {temperature}")
         
         # Initialize embeddings model
         self.embeddings = get_embeddings_model(provider=embedding_provider, model_name=embedding_model)
+        print(f"Embeddings model: {self.embeddings}")
         
         # Get Qdrant configuration
         qdrant_url = config.get('vector_store', {}).get('qdrant_url', 'http://localhost:6333')
         collection_name = config.get('vector_store', {}).get('qdrant_collection_name', 'my_collection')
+        print(f"Qdrant URL: {qdrant_url}")
+        print(f"Collection name: {collection_name}")
         
         # Initialize Qdrant client
         client = QdrantClient(url=qdrant_url)
@@ -67,9 +75,16 @@ class RAGPipeline:
             )
 
         # Create retriever with configurable parameters
+        search_type = config.get_search_type()
+        search_kwargs = {"k": config.get_top_k_results()}
+        
+        # Add MMR-specific parameters if using MMR search
+        if search_type == "mmr":
+            search_kwargs["lambda_mult"] = config.get_mmr_diversity_score()
+        
         self.retriever = self.vector_store.as_retriever(
-            search_type=config.get_search_type(),
-            search_kwargs={"k": config.get_top_k_results()}
+            search_type=search_type,
+            search_kwargs=search_kwargs
         )
         
         # Initialize LLM
@@ -88,13 +103,117 @@ class RAGPipeline:
             | StrOutputParser()
         )
 
-    def __call__(self, question: str) -> Dict[str, Any]:
-        try:
-            # Run the RAG chain
-            answer = self.chain.invoke(question)
+    def format_chat_history(self, chat_history: List[Dict[str, str]]) -> str:
+        """Format chat history for inclusion in the prompt."""
+        if not chat_history:
+            return ""
+        
+        formatted_history = []
+        for interaction in chat_history:
+            role = interaction.get('role', '')
+            content = interaction.get('content', '')
             
-            # Get the documents from the retriever directly
-            retrieved_docs = self.retriever.get_relevant_documents(question)
+            if role == 'user':
+                formatted_history.append(f"Human: {content}")
+            elif role == 'assistant':
+                formatted_history.append(f"Assistant: {content}")
+        
+        return "\n".join(formatted_history)
+
+    def rewrite_query_with_history(self, question: str, chat_history: List[Dict[str, str]]) -> str:
+        """Rewrite the user's question to include context from chat history."""
+        if not chat_history:
+            return question
+        
+        try:
+            # Format chat history for the rewrite prompt
+            history_text = self.format_chat_history(chat_history)
+            
+            # Get the query rewrite template
+            rewrite_template = config.get_query_rewrite_template()
+            if not rewrite_template:
+                # Fallback if no template is configured
+                return question
+            
+            # Create the rewrite prompt
+            rewrite_prompt = PromptTemplate.from_template(rewrite_template)
+            
+            # Create a chain for query rewriting
+            rewrite_chain = (
+                rewrite_prompt
+                | self.llm
+                | StrOutputParser()
+            )
+            
+            # Generate the rewritten query
+            rewritten_query = rewrite_chain.invoke({
+                "chat_history": history_text,
+                "current_question": question
+            })
+            
+            # Clean up the response (remove any extra formatting)
+            rewritten_query = rewritten_query.strip()
+            
+            print(f"Original query: {question}")
+            print(f"Rewritten query: {rewritten_query}")
+            
+            return rewritten_query
+            
+        except Exception as e:
+            print(f"Error rewriting query: {str(e)}. Using original question.")
+            return question
+
+    def __call__(self, question: str, chat_history: List[Dict[str, str]] = None) -> Dict[str, Any]:
+        if chat_history is None:
+            chat_history = []
+            
+        try:
+            # Rewrite the query to include context from chat history
+            retrieval_query = self.rewrite_query_with_history(question, chat_history)
+            
+            # Get the documents from the retriever using the rewritten query
+            retrieved_docs = self.retriever.get_relevant_documents(retrieval_query)
+            
+            # Format context from retrieved documents
+            context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+            
+            # Format chat history
+            history_text = self.format_chat_history(chat_history)
+            
+            # Create the full prompt with chat history
+            prompt_input = {
+                "query": question,
+                "context": context
+            }
+
+            print(f"Prompt input: {prompt_input}")
+            print(f"History text: {history_text}")
+            print(f"Context: {context}")
+            
+            # If we have chat history, we need to modify the prompt to include it
+            if history_text:
+                # Get the original prompt template
+                original_template = config.get_rag_prompt_template()
+                
+                # Create a new template that includes chat history
+                enhanced_template = f"""Previous conversation:
+{history_text}
+
+{original_template}"""
+                
+                enhanced_prompt = PromptTemplate.from_template(enhanced_template)
+                
+                # Create a new chain with the enhanced prompt
+                enhanced_chain = (
+                    enhanced_prompt
+                    | self.llm
+                    | StrOutputParser()
+                )
+                
+                answer = enhanced_chain.invoke(prompt_input)
+            else:
+                # Use the original chain if no history
+                answer = self.chain.invoke(question)
             
             # Format the output for consistency with app.py
             return {

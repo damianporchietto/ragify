@@ -93,6 +93,9 @@ Once the server is running, access the chat interface at:
 
 Features:
 - Real-time chat with the RAG system
+- **Conversation memory** - remembers last 5 interactions for context
+- **Markdown support** for rich text formatting in responses
+- **Syntax highlighting** for code blocks
 - Source document references with previews
 - Typing indicators and status monitoring
 - Message history persistence
@@ -296,9 +299,19 @@ Fine-tune retrieval behavior:
 
 ```yaml
 retrieval:
-  search_type: "similarity"     # similarity, mmr
-  top_k_results: 4             # Number of retrieved documents
+  search_type: "mmr"           # "similarity" or "mmr" (Maximal Marginal Relevance)
+  top_k_results: 2             # Number of retrieved documents (reduced for better precision)
+  mmr_diversity_score: 0.5     # Balance between relevance (0.0) and diversity (1.0)
 ```
+
+**Search Types:**
+- **similarity**: Pure semantic similarity search
+- **mmr**: Maximal Marginal Relevance - balances relevance with diversity to reduce redundant results
+
+**Optimization Tips:**
+- Lower `top_k_results` (2-3) for better precision and less irrelevant context
+- Use `mmr` search type to avoid redundant similar documents
+- Adjust `mmr_diversity_score`: closer to 0.0 for relevance, closer to 1.0 for diversity
 
 ### Document Processing
 
@@ -309,6 +322,25 @@ document_processing:
   chunk_size: 1000            # Characters per chunk
   chunk_overlap: 200          # Overlap between chunks
 ```
+
+### Conversation History
+
+Configure chat memory settings:
+
+```yaml
+chat:
+  history_length: 5           # Number of previous interactions to remember
+  max_context_tokens: 2000    # Maximum tokens for chat history context
+```
+
+The system automatically remembers the last 5 user-assistant interactions and uses them as context for follow-up questions. This enables:
+- Natural conversation flow
+- Follow-up questions without repeating context
+- Reference to previous answers
+- Contextual clarifications
+
+**Query Rewriting for Better Retrieval:**
+The system includes intelligent query rewriting that incorporates conversation history into document retrieval. When you ask a follow-up question like "Can you explain that in more detail?", the system rewrites it to include context from previous exchanges, ensuring the vector database retrieves relevant documents for the complete context, not just the isolated question.
 
 ## 🚀 Deployment
 

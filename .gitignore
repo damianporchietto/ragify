@@ -65,3 +65,6 @@ gcp-*.json
 *.tmp
 *.temp
 .cache/
+
+# Documents
+docs/
