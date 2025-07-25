@@ -1,17 +1,27 @@
-flask>=2.0.0
-python-dotenv>=0.20.0
-langchain>=0.3.0
-langchain-openai>=0.1.0
-langchain-text-splitters>=0.0.1
-PyPDF2>=3.0.0
-reportlab>=3.6.0
-PyYAML>=6.0
+# Core dependencies with pinned versions for security and stability
+flask==3.0.0
+python-dotenv==1.0.0
+langchain==0.3.7
+langchain-openai==0.2.8
+langchain-text-splitters==0.3.2
+PyPDF2==3.0.1
+reportlab==4.2.5
+PyYAML==6.0.2
+
+# Security and rate limiting
+flask-limiter==3.8.0
+werkzeug==3.0.1
 
 # Qdrant vector store dependencies
-qdrant-client>=1.7.0
-langchain-qdrant>=0.1.0
+qdrant-client==1.12.1
+langchain-qdrant==0.1.4
 
 # Google Cloud / Vertex AI dependencies
-google-cloud-aiplatform>=1.36.0
-google-auth>=2.22.0
-langchain-google-vertexai>=0.0.1
+google-cloud-aiplatform==1.75.0
+google-auth==2.35.0
+langchain-google-vertexai==2.0.11
+
+# Additional security and monitoring
+cryptography==43.0.3
+requests==2.32.3
+urllib3==2.2.3

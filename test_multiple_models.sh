@@ -116,21 +116,16 @@ else
   echo "Skipping OpenAI tests (OPENAI_API_KEY not found)"
 fi
 
-# Ollama tests (if installed)
-if command -v ollama &> /dev/null; then
-  check_dependencies "ollama" "mistral"
-  run_test "ollama_mistral" "ollama" "mistral" "ollama" "nomic-embed-text"
+# Vertex AI tests (if service account is configured)
+if [ -f "vertex_service_account.json" ] || [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  echo "Testing Vertex AI configuration..."
+  run_test "vertexai_gemini" "vertexai" "gemini-2.5-flash" "vertexai" "gemini-embedding-001"
 else
-  echo "Skipping Ollama tests (not installed)"
+  echo "Skipping Vertex AI tests (no service account configured)"
 fi
 
-# HuggingFace tests (if dependencies are installed)
-if pip list | grep -q "transformers"; then
-  check_dependencies "huggingface"
-  run_test "huggingface_flan_t5" "huggingface" "google/flan-t5-base" "huggingface" "BAAI/bge-small-en-v1.5"
-else
-  echo "Skipping HuggingFace tests (dependencies not installed)"
-fi
+echo "Note: Only OpenAI and Vertex AI providers are currently supported."
+echo "Ollama and HuggingFace providers mentioned in previous versions are not implemented."
 
 echo ""
 echo "=========================================="

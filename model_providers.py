@@ -71,7 +71,11 @@ def get_embeddings_model(provider: str = "openai", model_name: Optional[str] = N
         openai_api_key = config.get_openai_api_key() or os.getenv("OPENAI_API_KEY")
         if not openai_api_key:
             raise ValueError("OpenAI API key not found. Please set it in config.yaml or as an environment variable.")
-        return OpenAIEmbeddings(model=model, openai_api_key=openai_api_key)
+        
+        try:
+            return OpenAIEmbeddings(model=model, openai_api_key=openai_api_key)
+        except Exception as e:
+            raise ConnectionError(f"Failed to initialize OpenAI embeddings: {str(e)}")
         
     elif provider == "vertexai":
         # Get Vertex AI configuration

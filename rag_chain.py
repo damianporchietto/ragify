@@ -120,15 +120,20 @@ class RAGPipeline:
                 "source_documents": result.get("source_documents", [])
             }
 
-# Convenience loader
-_pipeline: RAGPipeline | None = None
+import threading
+from typing import Dict, Tuple
 
-def load_rag_chain(llm_provider: str = None, 
+# Thread-safe pipeline cache
+_pipeline_cache: Dict[Tuple[str, str, str, str], RAGPipeline] = {}
+_cache_lock = threading.Lock()
+
+def load_rag_chain(llm_provider: str = None,
                    llm_model: Optional[str] = None,
-                   embedding_provider: str = None, 
+                   embedding_provider: str = None,
                    embedding_model: Optional[str] = None) -> RAGPipeline:
     """
     Load or initialize the RAG pipeline with the specified models.
+    Thread-safe implementation with caching.
     
     Args:
         llm_provider: Provider for the LLM
@@ -138,29 +143,40 @@ def load_rag_chain(llm_provider: str = None,
         
     Returns:
         Initialized RAG pipeline
+        
+    Raises:
+        ValueError: If invalid providers are specified
+        ConnectionError: If unable to connect to vector store
     """
-    global _pipeline
+    # Use defaults if not specified
+    llm_provider = llm_provider or config.get_default_llm_provider()
+    embedding_provider = embedding_provider or config.get_default_embedding_provider()
+    llm_model = llm_model or config.get_default_llm_model()
+    embedding_model = embedding_model or config.get_default_embedding_model()
     
-    # If models are changed, recreate the pipeline
-    if _pipeline is not None:
-        if (os.getenv("LLM_PROVIDER") != llm_provider or 
-            os.getenv("EMBEDDING_PROVIDER") != embedding_provider):
-            _pipeline = None
+    # Create cache key
+    cache_key = (llm_provider, llm_model or "", embedding_provider, embedding_model or "")
     
-    if _pipeline is None:
-        # Save the current configuration
-        os.environ["LLM_PROVIDER"] = llm_provider or config.get_default_llm_provider()
-        os.environ["EMBEDDING_PROVIDER"] = embedding_provider or config.get_default_embedding_provider()
-        if llm_model:
-            os.environ["LLM_MODEL"] = llm_model
-        if embedding_model:
-            os.environ["EMBEDDING_MODEL"] = embedding_model
-            
-        _pipeline = RAGPipeline(
+    # Check cache first (thread-safe)
+    with _cache_lock:
+        if cache_key in _pipeline_cache:
+            return _pipeline_cache[cache_key]
+    
+    try:
+        # Create new pipeline
+        pipeline = RAGPipeline(
             llm_provider=llm_provider,
             llm_model=llm_model,
             embedding_provider=embedding_provider,
             embedding_model=embedding_model
         )
         
-    return _pipeline
+        # Cache the pipeline (thread-safe)
+        with _cache_lock:
+            _pipeline_cache[cache_key] = pipeline
+            
+        return pipeline
+        
+    except Exception as e:
+        print(f"Error creating RAG pipeline: {str(e)}")
+        raise

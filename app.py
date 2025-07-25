@@ -1,6 +1,11 @@
 import os
 import argparse
+import logging
+from typing import Dict, Any, Optional
 from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from dotenv import load_dotenv
 import traceback
 from pathlib import Path
@@ -8,6 +13,13 @@ from pathlib import Path
 from rag_chain import load_rag_chain
 from model_providers import list_available_providers
 from config_manager import config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()  # Loads OPENAI_API_KEY and other vars from .env if present
 
@@ -18,10 +30,44 @@ DEFAULT_EMBEDDING_PROVIDER = config.get_default_embedding_provider()
 DEFAULT_EMBEDDING_MODEL = config.get_default_embedding_model()
 
 # Configure Flask to serve static files from client folder
-app = Flask(__name__, 
+app = Flask(__name__,
             static_folder='client',
             static_url_path='/client')
+
+# Security configuration
+app.config['MAX_CONTENT_LENGTH'] = config.get('server.max_content_length', 16 * 1024 * 1024)  # 16MB
+
+# Initialize rate limiter if enabled
+rate_limit_config = config.get('server.rate_limit', {})
+if rate_limit_config.get('enabled', True):
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=[f"{rate_limit_config.get('requests_per_minute', 1)} per minute"]
+    )
+else:
+    limiter = None
+
 rag_chain = None  # Initialize lazily to avoid slow startup
+
+def validate_request_data(data: Dict[str, Any]) -> Optional[str]:
+    """Validate incoming request data."""
+    if not isinstance(data, dict):
+        return "Request must be a JSON object"
+    
+    message = data.get('message') or data.get('question')
+    if not message:
+        return "Request must contain 'message' or 'question' field"
+    
+    if not isinstance(message, str):
+        return "Message must be a string"
+    
+    if len(message.strip()) == 0:
+        return "Message cannot be empty"
+    
+    if len(message) > 10000:  # 10KB limit
+        return "Message too long (max 10,000 characters)"
+    
+    return None
 
 def get_rag_chain():
     global rag_chain
@@ -93,14 +139,27 @@ def providers():
     return jsonify(list_available_providers())
 
 @app.route('/ask', methods=['POST'])
+@limiter.limit("10 per minute") if limiter else lambda f: f
 def ask():
-    data = request.get_json(force=True, silent=True) or {}
-    question = data.get('message') or data.get('question')
-    
-    if not question:
-        return jsonify({'error': 'JSON payload must contain "message" or "question"'}), 400
-    
+    """Process a question using the RAG system."""
     try:
+        # Validate content type
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        # Get and validate request data
+        data = request.get_json(force=True, silent=True)
+        if data is None:
+            return jsonify({'error': 'Invalid JSON payload'}), 400
+        
+        # Validate request data
+        validation_error = validate_request_data(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
+        
+        question = data.get('message') or data.get('question')
+        logger.info(f"Processing question: {question[:100]}...")
+        
         # Lazy load RAG chain on first request
         chain = get_rag_chain()
         
@@ -108,6 +167,10 @@ def ask():
         result = chain(question)
         
         answer = result.get('result') or result.get('answer')
+        if not answer:
+            logger.warning("Empty answer received from RAG chain")
+            return jsonify({'error': 'Unable to generate answer'}), 500
+        
         sources = []
         
         # Extract source information if available
@@ -122,14 +185,21 @@ def ask():
                 for d in result.get('source_documents', [])
             ]
         
+        logger.info(f"Successfully processed question with {len(sources)} sources")
         return jsonify({
-            'answer': answer, 
+            'answer': answer,
             'sources': sources
         })
     
+    except RequestEntityTooLarge:
+        logger.warning("Request entity too large")
+        return jsonify({'error': 'Request too large'}), 413
+    except BadRequest as e:
+        logger.warning(f"Bad request: {str(e)}")
+        return jsonify({'error': 'Invalid request format'}), 400
     except Exception as exc:
-        app.logger.error(f"Error processing query: {str(exc)}\n{traceback.format_exc()}")
-        return jsonify({'error': str(exc)}), 500
+        logger.error(f"Error processing query: {str(exc)}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run the RAG Flask API with configurable models')

@@ -48,14 +48,16 @@
         <footer class="chat-footer">
             <form class="message-form" id="messageForm">
                 <div class="input-container">
-                    <textarea 
-                        id="messageInput" 
-                        placeholder="Ask me anything..." 
+                    <textarea
+                        id="messageInput"
+                        placeholder="Ask me anything..."
                         rows="1"
                         maxlength="1000"
+                        aria-label="Type your question here"
+                        aria-describedby="charCounter"
                     ></textarea>
-                    <button type="submit" id="sendButton" disabled>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button type="submit" id="sendButton" disabled aria-label="Send message">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="m22 2-7 20-4-9-9-4Z"/>
                             <path d="M22 2 11 13"/>
                         </svg>

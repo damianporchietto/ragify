@@ -345,9 +345,10 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 ## 🙏 Acknowledgments
 
 - Built with [LangChain](https://langchain.com/) for RAG pipeline management
-- [Qdrant](https://qdrant.tech/) for efficient vector similarity search
+- [Qdrant](https://qdrant.tech/) for efficient vector similarity search and persistence
 - [Flask](https://flask.palletsprojects.com/) for the web framework
 - Modern CSS and JavaScript for the responsive chat interface
+- [Flask-Limiter](https://flask-limiter.readthedocs.io/) for API rate limiting
 
 ## 📬 Support
 

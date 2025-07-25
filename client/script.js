@@ -1,9 +1,25 @@
 class ChatClient {
     constructor() {
-        this.apiUrl = 'http://localhost:5000';
+        // Make API URL configurable based on current location
+        this.apiUrl = this.getApiUrl();
         this.maxMessages = 50;
         this.chatMessages = [];
         this.initialize();
+    }
+
+    getApiUrl() {
+        // Try to determine API URL from current location
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        const port = window.location.port || (protocol === 'https:' ? '443' : '80');
+        
+        // If we're on the same host as the API, use current location
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            return `${protocol}//${hostname}:${port}`;
+        }
+        
+        // Default to localhost for development
+        return 'http://localhost:5000';
     }
 
     initialize() {

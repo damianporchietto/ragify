@@ -1,10 +1,67 @@
+# Python
 venv/
 __pycache__/
-.DS_Store
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
 storage/
+qdrant_data/
+results_*/
+*.log
+
+# Sensitive files
 vertex_service_account.json
+*.json.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.key
+service-account*.json
+gcp-*.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

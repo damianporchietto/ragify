@@ -4,8 +4,14 @@
 # Server Configuration
 server:
   port: 5000
-  debug: true
+  debug: false  # Set to true only for development
   host: "0.0.0.0"
+  # Security settings
+  max_content_length: 16777216  # 16MB max request size
+  rate_limit:
+    enabled: true
+    requests_per_minute: 5
+    burst_limit: 2
 
 # Model Configuration
 models:
@@ -14,7 +20,7 @@ models:
     llm_provider: "vertexai"  # openai or vertexai
     llm_model: "gemini-2.5-flash"  # Uses provider default if null
     embedding_provider: "vertexai"  # openai or vertexai
-    embedding_model: "gemini-embedding-001"  # Uses provider default if null
+    embedding_model: "text-multilingual-embedding-002"  # Uses provider default if null
     temperature: 0
     openai_api_key: null # OpenAI API Key (can be overridden by OPENAI_API_KEY env var)
     google_service_account_path: "./vertex_service_account.json"  # Path to Google service account JSON file
@@ -26,7 +32,7 @@ models:
       embedding_model: "text-embedding-3-large"
     vertexai:
       llm_model: "gemini-2.5-flash"
-      embedding_model: "gemini-embedding-001"
+      embedding_model: "text-multilingual-embedding-002"
       project: "development-466318"  # Google Cloud project ID
       region: "us-east5"  # Google Cloud region
 
